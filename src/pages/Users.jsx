@@ -1,146 +1,287 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus } from 'lucide-react';
-import UserList from '../components/users/UserList';
-import UserForm from '../components/users/UserForm';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Users as UsersIcon,
+  Plus,
+  Search,
+  Clock,
+  DollarSign,
+  TrendingUp,
+  Award,
+  Calendar,
+  LogIn,
+  LogOut
+} from 'lucide-react';
 import PermissionGate from '../components/PermissionGate';
+import EmployeeForm from '../components/users/EmployeeForm';
+import EmployeeList from '../components/users/EmployeeList';
+import PerformanceTab from '../components/users/PerformanceTab';
+import TimeTrackingTab from '../components/users/TimeTrackingTab';
 
-export default function UsersPage() {
-  const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+export default function EmployeeManagementPage() {
+  const [employees, setEmployees] = useState([]);
+  const [timeEntries, setTimeEntries] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
-  const loadUsers = useCallback(async () => {
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
     try {
       setLoading(true);
+      const user = JSON.parse(localStorage.getItem('pinLoggedInUser')) || await base44.auth.me();
+      setCurrentUser(user);
       
-      // Get current user's merchant_id
-      const pinUserJSON = localStorage.getItem('pinLoggedInUser');
-      let currentUser;
-      if (pinUserJSON) {
-        currentUser = JSON.parse(pinUserJSON);
-      } else {
-        currentUser = await base44.auth.me();
-      }
+      const [employeesList, timeEntriesList, ordersList] = await Promise.all([
+        base44.entities.User.filter({ merchant_id: user.merchant_id }),
+        base44.entities.TimeEntry.filter({ merchant_id: user.merchant_id }, '-created_date', 100),
+        base44.entities.Order.filter({ merchant_id: user.merchant_id, status: 'completed' }, '-created_date', 200)
+      ]);
 
-      // Load users for this merchant
-      let userList;
-      if (currentUser.role === 'admin' && !currentUser.is_impersonating) {
-        // Super admin sees all users
-        userList = await base44.entities.User.list();
-      } else if (currentUser.merchant_id) {
-        // Merchant users see only their merchant's users
-        userList = await base44.entities.User.filter({ merchant_id: currentUser.merchant_id });
-      } else {
-        userList = [];
-      }
-      
-      setUsers(userList);
+      setEmployees(employeesList);
+      setTimeEntries(timeEntriesList);
+      setOrders(ordersList);
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('Error loading employee data:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
-
-  const handleSaveUser = async (userData) => {
+  const handleClockIn = async () => {
     try {
-      // Get current user's merchant_id to assign to new users
-      const pinUserJSON = localStorage.getItem('pinLoggedInUser');
-      let currentUser;
-      if (pinUserJSON) {
-        currentUser = JSON.parse(pinUserJSON);
-      } else {
-        currentUser = await base44.auth.me();
-      }
+      const timeEntry = await base44.entities.TimeEntry.create({
+        merchant_id: currentUser.merchant_id,
+        dealer_id: currentUser.dealer_id,
+        user_id: currentUser.id,
+        user_name: currentUser.full_name,
+        clock_in: new Date().toISOString(),
+        status: 'clocked_in',
+        station_id: currentUser.pos_settings?.station_id
+      });
 
-      // Ensure merchant_id is set for new users
-      if (!selectedUser && currentUser.merchant_id) {
-        userData.merchant_id = currentUser.merchant_id;
-      }
+      await base44.entities.User.update(currentUser.id, {
+        currently_clocked_in: true,
+        current_time_entry_id: timeEntry.id
+      });
 
-      if (selectedUser) {
-        await base44.entities.User.update(selectedUser.id, userData);
-      } else {
-        await base44.entities.User.create(userData);
-      }
-      loadUsers();
-      setIsFormOpen(false);
-      setSelectedUser(null);
+      // Update local storage
+      const updatedUser = { ...currentUser, currently_clocked_in: true, current_time_entry_id: timeEntry.id };
+      localStorage.setItem('pinLoggedInUser', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+
+      loadData();
+      alert('Clocked in successfully!');
     } catch (error) {
-      console.error('Error saving user:', error);
-      alert('Failed to save user. Please make sure all required fields are filled correctly.');
+      console.error('Error clocking in:', error);
+      alert('Failed to clock in');
     }
   };
 
-  const handleEditUser = (user) => {
-    setSelectedUser(user);
-    setIsFormOpen(true);
-  };
+  const handleClockOut = async () => {
+    try {
+      const clockOutTime = new Date();
+      const timeEntry = timeEntries.find(t => t.id === currentUser.current_time_entry_id);
+      
+      if (timeEntry) {
+        const clockInTime = new Date(timeEntry.clock_in);
+        const hoursWorked = (clockOutTime - clockInTime) / (1000 * 60 * 60);
 
-  const handleAddNewUser = () => {
-    setSelectedUser(null);
-    setIsFormOpen(true);
-  };
+        await base44.entities.TimeEntry.update(timeEntry.id, {
+          clock_out: clockOutTime.toISOString(),
+          hours_worked: hoursWorked,
+          status: 'clocked_out'
+        });
 
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      try {
-        await base44.entities.User.delete(userId);
-        loadUsers();
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Failed to delete user.');
+        await base44.entities.User.update(currentUser.id, {
+          currently_clocked_in: false,
+          current_time_entry_id: null,
+          total_hours_worked: (currentUser.total_hours_worked || 0) + hoursWorked
+        });
+
+        const updatedUser = { ...currentUser, currently_clocked_in: false, current_time_entry_id: null };
+        localStorage.setItem('pinLoggedInUser', JSON.stringify(updatedUser));
+        setCurrentUser(updatedUser);
+
+        loadData();
+        alert(`Clocked out! You worked ${hoursWorked.toFixed(2)} hours.`);
       }
+    } catch (error) {
+      console.error('Error clocking out:', error);
+      alert('Failed to clock out');
     }
   };
+
+  const stats = {
+    totalEmployees: employees.length,
+    activeEmployees: employees.filter(e => e.is_active).length,
+    clockedIn: employees.filter(e => e.currently_clocked_in).length,
+    totalPayroll: employees.reduce((sum, e) => sum + ((e.hourly_rate || 0) * (e.total_hours_worked || 0)), 0)
+  };
+
+  const filteredEmployees = employees.filter(emp =>
+    emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    emp.employee_id?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <PermissionGate permission="manage_users">
-      <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold">User Management</h1>
-            <Button onClick={handleAddNewUser}>
-              <Plus className="w-4 h-4 mr-2" /> Add New User
-            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <UsersIcon className="w-8 h-8 text-blue-600" />
+                Employee Management
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">
+                Manage staff, track performance, and monitor time
+              </p>
+            </div>
+            <div className="flex gap-3">
+              {currentUser && (
+                <Button
+                  onClick={currentUser.currently_clocked_in ? handleClockOut : handleClockIn}
+                  variant={currentUser.currently_clocked_in ? 'destructive' : 'default'}
+                >
+                  {currentUser.currently_clocked_in ? (
+                    <>
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Clock Out
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4 mr-2" />
+                      Clock In
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button onClick={() => { setEditingEmployee(null); setShowForm(true); }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Employee
+              </Button>
+            </div>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>User List ({users.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-500">Loading users...</p>
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Staff</p>
+                    <p className="text-2xl font-bold dark:text-white">{stats.totalEmployees}</p>
+                  </div>
+                  <UsersIcon className="w-8 h-8 text-blue-500" />
                 </div>
-              ) : (
-                <UserList
-                  users={users}
-                  onEdit={handleEditUser}
-                  onDelete={handleDeleteUser}
-                />
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Active</p>
+                    <p className="text-2xl font-bold dark:text-white">{stats.activeEmployees}</p>
+                  </div>
+                  <Award className="w-8 h-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Clocked In</p>
+                    <p className="text-2xl font-bold dark:text-white">{stats.clockedIn}</p>
+                  </div>
+                  <Clock className="w-8 h-8 text-orange-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="dark:bg-gray-800 dark:border-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Total Payroll</p>
+                    <p className="text-2xl font-bold dark:text-white">${stats.totalPayroll.toFixed(0)}</p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-          {isFormOpen && (
-            <UserForm
-              user={selectedUser}
-              onSave={handleSaveUser}
-              onCancel={() => {
-                setIsFormOpen(false);
-                setSelectedUser(null);
-              }}
+          <Tabs defaultValue="employees" className="space-y-6">
+            <TabsList className="dark:bg-gray-800">
+              <TabsTrigger value="employees" className="dark:data-[state=active]:bg-blue-600 dark:text-gray-300">
+                <UsersIcon className="w-4 h-4 mr-2" />
+                Employees
+              </TabsTrigger>
+              <TabsTrigger value="performance" className="dark:data-[state=active]:bg-blue-600 dark:text-gray-300">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Performance
+              </TabsTrigger>
+              <TabsTrigger value="time" className="dark:data-[state=active]:bg-blue-600 dark:text-gray-300">
+                <Clock className="w-4 h-4 mr-2" />
+                Time Tracking
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="employees">
+              <Card className="dark:bg-gray-800 dark:border-gray-700">
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="dark:text-white">Staff Directory</CardTitle>
+                    <div className="relative w-64">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        placeholder="Search employees..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <EmployeeList
+                    employees={filteredEmployees}
+                    onEdit={(emp) => { setEditingEmployee(emp); setShowForm(true); }}
+                    onRefresh={loadData}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="performance">
+              <PerformanceTab employees={employees} orders={orders} />
+            </TabsContent>
+
+            <TabsContent value="time">
+              <TimeTrackingTab employees={employees} timeEntries={timeEntries} onRefresh={loadData} />
+            </TabsContent>
+          </Tabs>
+
+          {showForm && (
+            <EmployeeForm
+              employee={editingEmployee}
+              isOpen={showForm}
+              onClose={() => { setShowForm(false); setEditingEmployee(null); }}
+              onSave={loadData}
+              currentUser={currentUser}
             />
           )}
         </div>
