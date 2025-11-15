@@ -6,21 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
   ShoppingCart,
@@ -30,16 +15,23 @@ import {
   Car,
   Store,
   UtensilsCrossed,
-  CreditCard,
-  Bitcoin,
   CheckCircle,
-  QrCode,
-  Loader2
+  Loader2,
+  DollarSign
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ModifierDialog from "../components/online-menu/ModifierDialog";
 import ProductGrid from '../components/pos/ProductGrid';
 import SolanaPayScreen from '../components/customer-display/SolanaPayScreen';
+import LoyaltyWidget from '../components/online-menu/LoyaltyWidget';
 
 const ProductCard = ({ product, onAddToCart, onToggleFavorite, isFavorite }) => {
   return (
@@ -115,6 +107,7 @@ export default function OnlineMenuPage() {
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [currentOrder, setCurrentOrder] = useState(null);
   const [showSolanaPayModal, setShowSolanaPayModal] = useState(false);
+  const [selectedReward, setSelectedReward] = useState(null);
 
   const loadUserData = useCallback(async (user) => {
     try {
@@ -136,11 +129,9 @@ export default function OnlineMenuPage() {
     try {
       setLoading(true);
       
-      // Load products
       const productList = await base44.entities.Product.list();
       setProducts(productList.filter(p => p.is_active));
 
-      // Try to get current user
       try {
         const userData = await base44.auth.me();
         setCurrentUser(userData);
@@ -151,7 +142,6 @@ export default function OnlineMenuPage() {
         }));
         loadUserData(userData);
         
-        // Load merchant settings for this user
         if (userData.merchant_id) {
           const merchants = await base44.entities.Merchant.filter({ id: userData.merchant_id });
           if (merchants && merchants.length > 0) {
@@ -160,7 +150,6 @@ export default function OnlineMenuPage() {
         }
       } catch (authError) {
         console.log('No authenticated user - public browsing mode');
-        // Try to load first active merchant for public browsing
         try {
           const merchants = await base44.entities.Merchant.filter({ status: 'active' });
           if (merchants && merchants.length > 0) {
@@ -250,11 +239,27 @@ export default function OnlineMenuPage() {
     const subtotal = cart.reduce((sum, item) => sum + item.item_total, 0);
     const deliveryFee = customerInfo.fulfillment_type === "delivery" ? (merchant?.settings?.online_ordering?.delivery_fee || 4.99) : 0;
     const taxRate = merchant?.settings?.tax_rate || 0.08;
-    const taxAmount = (subtotal + deliveryFee) * taxRate;
-    const total = subtotal + deliveryFee + taxAmount;
+    
+    // Apply reward discount
+    let rewardDiscount = 0;
+    if (selectedReward) {
+      if (selectedReward.reward_type === 'fixed_discount') {
+        rewardDiscount = selectedReward.discount_value;
+      } else if (selectedReward.reward_type === 'percentage_discount') {
+        rewardDiscount = subtotal * (selectedReward.discount_value / 100);
+        if (selectedReward.max_discount_amount > 0 && rewardDiscount > selectedReward.max_discount_amount) {
+          rewardDiscount = selectedReward.max_discount_amount;
+        }
+      }
+    }
+    
+    const discountedSubtotal = Math.max(0, subtotal - rewardDiscount);
+    const taxAmount = (discountedSubtotal + deliveryFee) * taxRate;
+    const total = discountedSubtotal + deliveryFee + taxAmount;
 
     return {
       subtotal: subtotal.toFixed(2),
+      rewardDiscount: rewardDiscount.toFixed(2),
       deliveryFee: deliveryFee.toFixed(2),
       taxAmount: taxAmount.toFixed(2),
       total: total.toFixed(2)
@@ -277,6 +282,7 @@ export default function OnlineMenuPage() {
     setPaymentMethod('card');
     setCurrentOrder(null);
     setShowSolanaPayModal(false);
+    setSelectedReward(null);
   }, [currentUser]);
 
   const processCardCryptoPayment = async (paymentDetails) => {
@@ -293,6 +299,52 @@ export default function OnlineMenuPage() {
         payment_status: "paid",
         payment_method: paymentDetails.method
       });
+
+      // Update customer points and record redemption
+      if (customerInfo.phone && merchant?.id) {
+        const customers = await base44.entities.Customer.filter({ 
+          merchant_id: merchant.id,
+          phone: customerInfo.phone 
+        });
+        
+        if (customers.length > 0) {
+          const customer = customers[0];
+          const loyaltySettings = merchant.settings?.loyalty_program || {};
+          const pointsEarned = Math.floor(parseFloat(currentOrder.total) * (loyaltySettings.points_per_dollar || 10) / 100);
+          let newPoints = (customer.loyalty_points || 0) + pointsEarned;
+          
+          // Deduct points if reward was used
+          if (selectedReward) {
+            newPoints -= selectedReward.points_required;
+            
+            // Record redemption
+            await base44.entities.CustomerRedemption.create({
+              merchant_id: merchant.id,
+              customer_id: customer.id,
+              customer_phone: customer.phone,
+              reward_id: selectedReward.id,
+              reward_name: selectedReward.name,
+              points_spent: selectedReward.points_required,
+              discount_amount: parseFloat(calculateTotals().rewardDiscount),
+              order_id: currentOrder.id,
+              order_number: currentOrder.order_number,
+              status: 'used'
+            });
+            
+            // Update reward redemption count
+            await base44.entities.Reward.update(selectedReward.id, {
+              total_redemptions: (selectedReward.total_redemptions || 0) + 1
+            });
+          }
+          
+          // Update customer
+          await base44.entities.Customer.update(customer.id, {
+            loyalty_points: newPoints,
+            total_spent: (customer.total_spent || 0) + parseFloat(currentOrder.total),
+            visit_count: (customer.visit_count || 0) + 1
+          });
+        }
+      }
 
       setCheckoutStep('confirmation');
       setTimeout(resetOrderState, 5000);
@@ -324,6 +376,15 @@ export default function OnlineMenuPage() {
       return;
     }
 
+    // Check minimum purchase for reward
+    if (selectedReward && selectedReward.min_purchase_amount > 0) {
+      const subtotal = cart.reduce((sum, item) => sum + item.item_total, 0);
+      if (subtotal < selectedReward.min_purchase_amount) {
+        alert(`Minimum purchase of $${selectedReward.min_purchase_amount} required for this reward`);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -347,6 +408,7 @@ export default function OnlineMenuPage() {
         subtotal: parseFloat(totals.subtotal),
         tax_amount: parseFloat(totals.taxAmount),
         delivery_fee: parseFloat(totals.deliveryFee),
+        discount_amount: parseFloat(totals.rewardDiscount),
         total: parseFloat(totals.total),
         fulfillment_type: customerInfo.fulfillment_type,
         delivery_address: customerInfo.fulfillment_type === 'delivery' ? customerInfo.delivery_address : null,
@@ -354,7 +416,12 @@ export default function OnlineMenuPage() {
         requested_time: customerInfo.requested_time || null,
         status: "pending",
         payment_status: "unpaid",
-        payment_method: paymentMethod
+        payment_method: paymentMethod,
+        payment_details: selectedReward ? {
+          reward_id: selectedReward.id,
+          reward_name: selectedReward.name,
+          points_used: selectedReward.points_required
+        } : {}
       };
 
       const createdOrder = await base44.entities.OnlineOrder.create(orderData);
@@ -368,6 +435,49 @@ export default function OnlineMenuPage() {
           payment_status: 'paid',
           payment_method: 'cash'
         });
+        
+        // Handle loyalty points for cash payment
+        if (customerInfo.phone && merchant?.id) {
+          const customers = await base44.entities.Customer.filter({ 
+            merchant_id: merchant.id,
+            phone: customerInfo.phone 
+          });
+          
+          if (customers.length > 0) {
+            const customer = customers[0];
+            const loyaltySettings = merchant.settings?.loyalty_program || {};
+            const pointsEarned = Math.floor(parseFloat(totals.total) * (loyaltySettings.points_per_dollar || 10) / 100);
+            let newPoints = (customer.loyalty_points || 0) + pointsEarned;
+            
+            if (selectedReward) {
+              newPoints -= selectedReward.points_required;
+              
+              await base44.entities.CustomerRedemption.create({
+                merchant_id: merchant.id,
+                customer_id: customer.id,
+                customer_phone: customer.phone,
+                reward_id: selectedReward.id,
+                reward_name: selectedReward.name,
+                points_spent: selectedReward.points_required,
+                discount_amount: parseFloat(totals.rewardDiscount),
+                order_id: createdOrder.id,
+                order_number: createdOrder.order_number,
+                status: 'used'
+              });
+              
+              await base44.entities.Reward.update(selectedReward.id, {
+                total_redemptions: (selectedReward.total_redemptions || 0) + 1
+              });
+            }
+            
+            await base44.entities.Customer.update(customer.id, {
+              loyalty_points: newPoints,
+              total_spent: (customer.total_spent || 0) + parseFloat(totals.total),
+              visit_count: (customer.visit_count || 0) + 1
+            });
+          }
+        }
+        
         setCheckoutStep('confirmation');
         setTimeout(resetOrderState, 5000);
         if (currentUser) loadUserData(currentUser);
@@ -397,10 +507,53 @@ export default function OnlineMenuPage() {
         status: 'confirmed',
         payment_status: 'paid',
         payment_details: {
+          ...currentOrder.payment_details,
           signature: signature,
           confirmed_at: new Date().toISOString()
         }
       });
+
+      // Update customer points
+      if (customerInfo.phone && merchant?.id) {
+        const customers = await base44.entities.Customer.filter({ 
+          merchant_id: merchant.id,
+          phone: customerInfo.phone 
+        });
+        
+        if (customers.length > 0) {
+          const customer = customers[0];
+          const loyaltySettings = merchant.settings?.loyalty_program || {};
+          const pointsEarned = Math.floor(parseFloat(currentOrder.total) * (loyaltySettings.points_per_dollar || 10) / 100);
+          let newPoints = (customer.loyalty_points || 0) + pointsEarned;
+          
+          if (selectedReward) {
+            newPoints -= selectedReward.points_required;
+            
+            await base44.entities.CustomerRedemption.create({
+              merchant_id: merchant.id,
+              customer_id: customer.id,
+              customer_phone: customer.phone,
+              reward_id: selectedReward.id,
+              reward_name: selectedReward.name,
+              points_spent: selectedReward.points_required,
+              discount_amount: parseFloat(calculateTotals().rewardDiscount),
+              order_id: currentOrder.id,
+              order_number: currentOrder.order_number,
+              status: 'used'
+            });
+            
+            await base44.entities.Reward.update(selectedReward.id, {
+              total_redemptions: (selectedReward.total_redemptions || 0) + 1
+            });
+          }
+          
+          await base44.entities.Customer.update(customer.id, {
+            loyalty_points: newPoints,
+            total_spent: (customer.total_spent || 0) + parseFloat(currentOrder.total),
+            visit_count: (customer.visit_count || 0) + 1
+          });
+        }
+      }
 
       setShowSolanaPayModal(false);
       setCheckoutStep('confirmation');
@@ -488,7 +641,6 @@ export default function OnlineMenuPage() {
           </div>
         </div>
 
-        {/* Menu Items */}
         <ProductGrid
           products={filteredProducts}
           onAddToCart={(product, modifiersFromGrid) => {
@@ -518,100 +670,6 @@ export default function OnlineMenuPage() {
         />
       )}
 
-      {/* Cart Modal */}
-      <Dialog open={showCart} onOpenChange={setShowCart}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 dark:text-white">
-              <ShoppingCart className="w-5 h-5" />
-              Your Order ({cart.length} items)
-            </DialogTitle>
-          </DialogHeader>
-
-          {cart.length === 0 ? (
-            <div className="text-center py-8">
-              <ShoppingCart className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">Your cart is empty</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Cart Items */}
-              <div className="space-y-4">
-                {cart.map((item, index) => (
-                  <div key={index} className="flex items-center gap-4 p-4 border rounded-lg dark:border-gray-700 dark:bg-gray-900">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 dark:text-white">{item.name}</h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">${item.price.toFixed(2)} each</p>
-                      
-                      {item.modifiers && item.modifiers.length > 0 && (
-                        <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                          + {item.modifiers.map(mod => `${mod.name} ($${mod.price_adjustment.toFixed(2)})`).join(", ")}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => updateCartQuantity(index, item.quantity - 1)}
-                        className="h-8 w-8 dark:border-gray-600 dark:hover:bg-gray-700 dark:text-white"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </Button>
-                      <span className="w-8 text-center dark:text-white">{item.quantity}</span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => updateCartQuantity(index, item.quantity + 1)}
-                        className="h-8 w-8 dark:border-gray-600 dark:hover:bg-gray-700 dark:text-white"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                    </div>
-                    <div className="font-medium dark:text-white">${item.item_total.toFixed(2)}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Order Summary */}
-              <div className="border-t pt-4 dark:border-gray-700">
-                <div className="space-y-2 text-sm dark:text-gray-200">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>${totals.subtotal}</span>
-                  </div>
-                  {parseFloat(totals.deliveryFee) > 0 && (
-                    <div className="flex justify-between">
-                      <span>Delivery Fee:</span>
-                      <span>${totals.deliveryFee}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>Tax:</span>
-                    <span>${totals.taxAmount}</span>
-                  </div>
-                  <Separator className="dark:bg-gray-600" />
-                  <div className="flex justify-between text-lg font-bold dark:text-white">
-                    <span>Total:</span>
-                    <span>${totals.total}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={() => setShowCart(false)} className="flex-1 dark:border-gray-600 dark:hover:bg-gray-700 dark:text-white">
-                  Continue Shopping
-                </Button>
-                <Button onClick={() => {setShowCart(false); setShowCheckout(true);}} className="flex-1">
-                  Checkout
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
       {/* Checkout Modal */}
       <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
@@ -630,7 +688,6 @@ export default function OnlineMenuPage() {
 
           {checkoutStep === 'details' && (
             <div className="space-y-6">
-              {/* Customer Information */}
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-lg dark:text-white">Contact Information</CardTitle>
@@ -642,7 +699,7 @@ export default function OnlineMenuPage() {
                       <Input
                         value={customerInfo.name}
                         onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
-                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         required
                       />
                     </div>
@@ -652,7 +709,7 @@ export default function OnlineMenuPage() {
                         type="tel"
                         value={customerInfo.phone}
                         onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
-                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         required
                       />
                     </div>
@@ -663,13 +720,22 @@ export default function OnlineMenuPage() {
                       type="email"
                       value={customerInfo.email}
                       onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
-                      className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                      className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Fulfillment Options */}
+              {/* Loyalty Widget */}
+              {customerInfo.phone && merchant?.settings?.loyalty_program?.enabled && (
+                <LoyaltyWidget
+                  phone={customerInfo.phone}
+                  merchant={merchant}
+                  onRewardSelected={setSelectedReward}
+                  selectedReward={selectedReward}
+                />
+              )}
+
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-lg dark:text-white">Order Fulfillment</CardTitle>
@@ -724,24 +790,11 @@ export default function OnlineMenuPage() {
                         value={customerInfo.delivery_address}
                         onChange={(e) => setCustomerInfo({...customerInfo, delivery_address: e.target.value})}
                         placeholder="Enter your complete delivery address"
-                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         required
                       />
                     </div>
                   )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label className="dark:text-gray-200">Preferred Time (optional)</Label>
-                      <Input
-                        type="datetime-local"
-                        value={customerInfo.requested_time}
-                        onChange={(e) => setCustomerInfo({...customerInfo, requested_time: e.target.value})}
-                        min={new Date().toISOString().slice(0, 16)}
-                        className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      />
-                    </div>
-                  </div>
 
                   <div>
                     <Label className="dark:text-gray-200">Special Instructions (optional)</Label>
@@ -749,71 +802,49 @@ export default function OnlineMenuPage() {
                       value={customerInfo.special_instructions}
                       onChange={(e) => setCustomerInfo({...customerInfo, special_instructions: e.target.value})}
                       placeholder="Any special requests or dietary restrictions"
-                      className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                      className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                 </CardContent>
               </Card>
               
-              {/* Payment Method Selection */}
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-lg dark:text-white">Payment Method</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Select
+                  <select
                     value={paymentMethod}
-                    onValueChange={setPaymentMethod}
-                    disabled={loading}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-full border-2 rounded-lg p-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   >
-                    <SelectTrigger className="w-full dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                      <SelectValue placeholder="Select a payment method" />
-                    </SelectTrigger>
-                    <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-                      <SelectItem value="card" className="dark:text-white dark:hover:bg-gray-700">
-                        <div className="flex items-center">
-                          <CreditCard className="w-4 h-4 mr-2" /> Credit/Debit Card
-                        </div>
-                      </SelectItem>
-                      {merchant?.settings?.online_ordering?.allow_cash_payment !== false && (
-                        <SelectItem value="cash" className="dark:text-white dark:hover:bg-gray-700">
-                          <div className="flex items-center">
-                            <DollarSign className="w-4 h-4 mr-2" /> Cash on {customerInfo.fulfillment_type === 'delivery' ? 'Delivery' : 'Pickup'}
-                          </div>
-                        </SelectItem>
-                      )}
-                      {merchant?.settings?.solana_pay?.enabled && merchant?.settings?.solana_pay?.display_in_customer_terminal !== false && (
-                        <SelectItem value="solana_pay" className="dark:text-white dark:hover:bg-gray-700">
-                          <div className="flex items-center">
-                            <Bitcoin className="w-4 h-4 mr-2" /> Solana Pay (Crypto)
-                          </div>
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                    <option value="card">Credit/Debit Card</option>
+                    {merchant?.settings?.online_ordering?.allow_cash_payment !== false && (
+                      <option value="cash">Cash on {customerInfo.fulfillment_type === 'delivery' ? 'Delivery' : 'Pickup'}</option>
+                    )}
+                    {merchant?.settings?.solana_pay?.enabled && merchant?.settings?.solana_pay?.display_in_customer_terminal !== false && (
+                      <option value="solana_pay">Solana Pay (Crypto)</option>
+                    )}
+                  </select>
                 </CardContent>
               </Card>
 
-              {/* Order Summary */}
               <Card className="dark:bg-gray-900 dark:border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-lg dark:text-white">Order Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2 text-sm mb-4 dark:text-gray-200">
-                    {cart.map((item, index) => (
-                      <div key={index} className="flex justify-between">
-                        <span>{item.quantity}x {item.name}</span>
-                        <span>${item.item_total.toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <Separator className="dark:bg-gray-600" />
-                  <div className="space-y-2 text-sm mt-4 dark:text-gray-200">
+                  <div className="space-y-2 text-sm dark:text-gray-200">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
                       <span>${totals.subtotal}</span>
                     </div>
+                    {parseFloat(totals.rewardDiscount) > 0 && (
+                      <div className="flex justify-between text-green-600 dark:text-green-400">
+                        <span>Reward Discount:</span>
+                        <span>-${totals.rewardDiscount}</span>
+                      </div>
+                    )}
                     {parseFloat(totals.deliveryFee) > 0 && (
                       <div className="flex justify-between">
                         <span>Delivery Fee:</span>
@@ -833,7 +864,6 @@ export default function OnlineMenuPage() {
                 </CardContent>
               </Card>
 
-              {/* Action Buttons */}
               <div className="flex gap-3">
                 <Button variant="outline" onClick={() => setShowCheckout(false)} className="flex-1 dark:border-gray-600 dark:hover:bg-gray-700 dark:text-white">
                   Back to Menu
@@ -848,90 +878,19 @@ export default function OnlineMenuPage() {
                     loading
                   }
                 >
-                  {loading ? "Processing..." : "Proceed to Payment"}
+                  {loading ? "Processing..." : "Place Order"}
                 </Button>
               </div>
             </div>
           )}
 
           {checkoutStep === 'payment' && (
-            <div>
-              <Tabs defaultValue="card" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 dark:bg-gray-700">
-                  <TabsTrigger value="card" className="dark:data-[state=active]:bg-blue-600 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-gray-300">
-                    <CreditCard className="w-4 h-4 mr-2"/>Card
-                  </TabsTrigger>
-                  <TabsTrigger value="crypto" disabled={!merchant?.settings?.blockchain} className="dark:data-[state=active]:bg-blue-600 dark:data-[state=active]:text-white dark:data-[state=inactive]:text-gray-500">
-                    <Bitcoin className="w-4 h-4 mr-2"/>Crypto
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="card" className="pt-4">
-                  <Card className="dark:bg-gray-900 dark:border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="dark:text-white">Pay with Credit Card</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label className="dark:text-gray-200">Card Number</Label>
-                        <Input placeholder="•••• •••• •••• ••••" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="dark:text-gray-200">Expiry</Label>
-                          <Input placeholder="MM / YY" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" />
-                        </div>
-                        <div>
-                          <Label className="dark:text-gray-200">CVC</Label>
-                          <Input placeholder="•••" className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" />
-                        </div>
-                      </div>
-                      <Button className="w-full" onClick={() => processCardCryptoPayment({ method: 'card' })} disabled={loading}>
-                        Pay ${totals.total}
-                      </Button>
-                      <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-2">This is a simulated payment form.</p>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                <TabsContent value="crypto" className="pt-4">
-                  <Card className="dark:bg-gray-900 dark:border-gray-700">
-                    <CardHeader>
-                      <CardTitle className="dark:text-white">Pay with Crypto</CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-center">
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Send payment to one of the addresses below.</p>
-                      <p className="font-bold text-lg dark:text-white">Total: ${totals.total}</p>
-                      {merchant?.settings?.blockchain ? (
-                        <div className="space-y-4 mt-4 text-left">
-                          {merchant.settings.blockchain.btc_address && (
-                            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                              <p className="font-semibold dark:text-white">Bitcoin (BTC)</p>
-                              <p className="text-xs break-all text-gray-700 dark:text-gray-300 mt-1">{merchant.settings.blockchain.btc_address}</p>
-                            </div>
-                          )}
-                          {merchant.settings.blockchain.eth_address && (
-                            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                              <p className="font-semibold dark:text-white">Ethereum (ETH)</p>
-                              <p className="text-xs break-all text-gray-700 dark:text-gray-300 mt-1">{merchant.settings.blockchain.eth_address}</p>
-                            </div>
-                          )}
-                          {merchant.settings.blockchain.sol_address && (
-                            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded">
-                              <p className="font-semibold dark:text-white">Solana (SOL)</p>
-                              <p className="text-xs break-all text-gray-700 dark:text-gray-300 mt-1">{merchant.settings.blockchain.sol_address}</p>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-red-500 dark:text-red-400 mt-4">Crypto payments not configured.</p>
-                      )}
-                      <Button className="w-full mt-6" onClick={() => processCardCryptoPayment({ method: 'crypto' })} disabled={loading}>
-                        I Have Sent The Payment
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
-              <Button variant="link" onClick={() => setCheckoutStep('details')} className="w-full mt-4 dark:text-blue-400" disabled={loading}>
+            <div className="space-y-4">
+              <p className="text-center text-gray-600 dark:text-gray-300">Simulated payment - click to confirm</p>
+              <Button className="w-full" onClick={() => processCardCryptoPayment({ method: paymentMethod })}>
+                Confirm Payment ${totals.total}
+              </Button>
+              <Button variant="link" onClick={() => setCheckoutStep('details')} className="w-full dark:text-blue-400">
                 Back to Details
               </Button>
             </div>
@@ -947,7 +906,6 @@ export default function OnlineMenuPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Solana Pay Modal */}
       {showSolanaPayModal && currentOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6">
@@ -971,7 +929,6 @@ export default function OnlineMenuPage() {
         </div>
       )}
 
-      {/* User Account Modal */}
       {currentUser && (
         <Dialog open={showAccount} onOpenChange={setShowAccount}>
           <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto dark:bg-gray-800 dark:border-gray-700">
