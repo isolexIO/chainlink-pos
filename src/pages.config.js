@@ -31,6 +31,7 @@ import DealerOnboarding from './pages/DealerOnboarding';
 import DealerDashboard from './pages/DealerDashboard';
 import RootAdmin from './pages/RootAdmin';
 import DealerLanding from './pages/DealerLanding';
+import LoyaltyProgram from './pages/LoyaltyProgram';
 import Layout from './Layout.jsx';
 
 
@@ -68,6 +69,7 @@ export const PAGES = {
     "DealerDashboard": DealerDashboard,
     "RootAdmin": RootAdmin,
     "DealerLanding": DealerLanding,
+    "LoyaltyProgram": LoyaltyProgram,
 }
 
 export const pagesConfig = {
