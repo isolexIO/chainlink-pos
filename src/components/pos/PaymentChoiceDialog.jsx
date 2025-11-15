@@ -1,3 +1,4 @@
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2, DollarSign, CreditCard, Banknote, CheckCircle } from 'lucide-react';

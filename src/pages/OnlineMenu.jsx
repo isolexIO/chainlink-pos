@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Product } from "@/entities/Product";
 import { OnlineOrder } from "@/entities/OnlineOrder";
 import { User } from "@/entities/User"; // Import User
@@ -33,6 +33,8 @@ import {
   Car,
   Store,
   UtensilsCrossed,
+  X,
+  Star,
   Receipt,
   CreditCard, // Added CreditCard
   Bitcoin,    // Added Bitcoin
