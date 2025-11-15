@@ -16,8 +16,6 @@ Deno.serve(async (req) => {
             setup_demo_data
         } = body;
 
-        console.log('createMerchantAccount: Request body:', { business_name, owner_name, owner_email, phone, setup_demo_data });
-
         if (!business_name || !owner_name || !owner_email) {
             return Response.json({
                 success: false,
@@ -28,10 +26,8 @@ Deno.serve(async (req) => {
         const base44 = createClientFromRequest(req);
 
         // Check if user already exists
-        console.log('createMerchantAccount: Checking for existing user with email:', owner_email);
         const existingUsers = await base44.asServiceRole.entities.User.filter({ email: owner_email });
         if (existingUsers && existingUsers.length > 0) {
-            console.log('createMerchantAccount: User already exists');
             return Response.json({
                 success: false,
                 error: 'An account with this email already exists'
@@ -40,12 +36,11 @@ Deno.serve(async (req) => {
 
         // Generate a random 6-digit PIN
         const pin = Math.floor(100000 + Math.random() * 900000).toString();
-        console.log('createMerchantAccount: Generated PIN');
+        console.log('Generated PIN:', pin);
 
-        // Generate a temporary password
+        // Generate a temporary password (user can reset via email)
         const tempPassword = Math.random().toString(36).slice(-12);
         const passwordHash = await bcrypt.hash(tempPassword, 10);
-        console.log('createMerchantAccount: Generated password hash');
 
         // Create merchant
         const merchantData = {
@@ -75,24 +70,14 @@ Deno.serve(async (req) => {
                     enabled: true,
                     allow_cash_payment: true,
                     allow_pickup: true,
-                    allow_delivery: true,
-                    min_order_amount: 0,
-                    delivery_fee: 0,
-                    delivery_radius_miles: 10
-                },
-                solana_pay: {
-                    enabled: false,
-                    network: 'mainnet',
-                    wallet_address: '',
-                    accepted_token: 'USDC',
-                    display_in_customer_terminal: true
+                    allow_delivery: true
                 }
             }
         };
 
-        console.log('createMerchantAccount: Creating merchant...');
+        console.log('Creating merchant:', merchantData);
         const merchant = await base44.asServiceRole.entities.Merchant.create(merchantData);
-        console.log('createMerchantAccount: Merchant created with ID:', merchant.id);
+        console.log('Merchant created:', merchant.id);
 
         // Create owner user account
         const userData = {
@@ -112,29 +97,30 @@ Deno.serve(async (req) => {
                 'view_reports',
                 'manage_settings',
                 'manage_users',
-                'submit_tickets'
+                'submit_tickets',
+                'manage_inventory'
             ]
         };
 
-        console.log('createMerchantAccount: Creating user...');
+        console.log('Creating user:', { ...userData, pin: '******', password_hash: '******' });
         const user = await base44.asServiceRole.entities.User.create(userData);
-        console.log('createMerchantAccount: User created with ID:', user.id);
+        console.log('User created:', user.id);
 
         // Set up demo data if requested
         if (setup_demo_data) {
-            console.log('createMerchantAccount: Setting up demo menu...');
+            console.log('Setting up demo menu...');
             try {
                 await base44.asServiceRole.functions.invoke('setupDemoMenu', {
                     merchant_id: merchant.id
                 });
-                console.log('createMerchantAccount: Demo menu setup complete');
+                console.log('Demo menu setup complete');
             } catch (demoError) {
-                console.error('createMerchantAccount: Error setting up demo menu:', demoError);
+                console.error('Error setting up demo menu:', demoError);
                 // Don't fail the whole process if demo setup fails
             }
         }
 
-        console.log('createMerchantAccount: Account creation successful');
+        console.log('Merchant account created successfully');
 
         return Response.json({
             success: true,
@@ -152,12 +138,10 @@ Deno.serve(async (req) => {
         });
 
     } catch (error) {
-        console.error('createMerchantAccount: Fatal error:', error);
-        console.error('createMerchantAccount: Error stack:', error.stack);
+        console.error('createMerchantAccount error:', error);
         return Response.json({
             success: false,
-            error: error.message || 'Failed to create merchant account',
-            details: error.stack
+            error: error.message || 'Failed to create merchant account'
         }, { status: 500 });
     }
 });
