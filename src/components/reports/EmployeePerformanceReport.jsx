@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Download, TrendingUp, DollarSign, Award } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 export default function EmployeePerformanceReport({ employees, orders, dateRange, loading }) {
   const getEmployeeMetrics = () => {
@@ -79,17 +78,15 @@ export default function EmployeePerformanceReport({ employees, orders, dateRange
     doc.setFontSize(12);
     doc.text(`Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`, 14, 30);
     
-    doc.autoTable({
-      startY: 40,
-      head: [['Employee', 'Role', 'Sales', 'Orders', 'Avg Order', 'Commission']],
-      body: metrics.map(emp => [
-        emp.name,
-        emp.role || 'user',
-        `$${emp.totalSales.toFixed(2)}`,
-        emp.totalOrders.toString(),
-        `$${emp.avgOrderValue.toFixed(2)}`,
-        `$${emp.commission.toFixed(2)}`
-      ])
+    let y = 45;
+    doc.setFontSize(10);
+    metrics.slice(0, 20).forEach((emp, index) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${emp.name}: $${emp.totalSales.toFixed(2)} (${emp.totalOrders} orders)`, 14, y);
+      y += 7;
     });
 
     doc.save(`employee_performance_${new Date().toISOString().split('T')[0]}.pdf`);

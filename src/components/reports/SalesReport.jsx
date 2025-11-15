@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Download, DollarSign, ShoppingCart, TrendingUp, Package } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
@@ -109,41 +108,21 @@ export default function SalesReport({ orders, products, customers, dateRange, lo
     const metrics = calculateMetrics();
     const doc = new jsPDF();
     
-    // Title
     doc.setFontSize(20);
     doc.text('Sales Report', 14, 20);
     
-    // Date range
     doc.setFontSize(12);
     doc.text(`Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`, 14, 30);
     
-    // Key metrics
     doc.setFontSize(14);
     doc.text('Key Metrics', 14, 45);
-    doc.autoTable({
-      startY: 50,
-      head: [['Metric', 'Value']],
-      body: [
-        ['Total Revenue', `$${metrics.totalRevenue.toFixed(2)}`],
-        ['Total Orders', metrics.totalOrders.toString()],
-        ['Average Order Value', `$${metrics.avgOrderValue.toFixed(2)}`],
-        ['Total Items Sold', metrics.totalItems.toString()]
-      ]
-    });
-
-    // Order details
-    doc.text('Order Details', 14, doc.lastAutoTable.finalY + 15);
-    doc.autoTable({
-      startY: doc.lastAutoTable.finalY + 20,
-      head: [['Order #', 'Date', 'Customer', 'Total', 'Status']],
-      body: orders.slice(0, 50).map(order => [
-        order.order_number,
-        new Date(order.created_date).toLocaleDateString(),
-        order.customer_name || 'Guest',
-        `$${(order.total || 0).toFixed(2)}`,
-        order.status
-      ])
-    });
+    
+    let y = 55;
+    doc.setFontSize(10);
+    doc.text(`Total Revenue: $${metrics.totalRevenue.toFixed(2)}`, 14, y);
+    doc.text(`Total Orders: ${metrics.totalOrders}`, 14, y + 7);
+    doc.text(`Average Order Value: $${metrics.avgOrderValue.toFixed(2)}`, 14, y + 14);
+    doc.text(`Total Items Sold: ${metrics.totalItems}`, 14, y + 21);
 
     doc.save(`sales_report_${new Date().toISOString().split('T')[0]}.pdf`);
   };

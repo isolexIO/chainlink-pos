@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, TrendingUp, Users, Package, DollarSign, Clock, ShoppingCart } from 'lucide-react';
+import { FileText, TrendingUp, Users, Package, DollarSign, Clock, ShoppingCart } from 'lucide-react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 const PRESET_REPORTS = [
   {
@@ -86,21 +85,15 @@ export default function PresetReports({ orders, products, customers, employees, 
     doc.text(`Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`, 14, 30);
     
     const data = Object.values(salesByDay).sort((a, b) => new Date(a.date) - new Date(b.date));
-    doc.autoTable({
-      startY: 40,
-      head: [['Date', 'Orders', 'Items', 'Revenue']],
-      body: data.map(day => [
-        day.date,
-        day.orders.toString(),
-        day.items.toString(),
-        `$${day.revenue.toFixed(2)}`
-      ]),
-      foot: [[
-        'TOTAL',
-        data.reduce((sum, d) => sum + d.orders, 0).toString(),
-        data.reduce((sum, d) => sum + d.items, 0).toString(),
-        `$${data.reduce((sum, d) => sum + d.revenue, 0).toFixed(2)}`
-      ]]
+    let y = 45;
+    doc.setFontSize(10);
+    data.forEach(day => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${day.date}: ${day.orders} orders, ${day.items} items, $${day.revenue.toFixed(2)}`, 14, y);
+      y += 7;
     });
 
     doc.save(`daily_sales_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -124,14 +117,11 @@ export default function PresetReports({ orders, products, customers, employees, 
     doc.setFontSize(12);
     doc.text(`Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`, 14, 30);
     
-    doc.autoTable({
-      startY: 40,
-      head: [['Hour', 'Orders', 'Revenue']],
-      body: Object.values(salesByHour).map(hour => [
-        `${hour.hour}:00 - ${hour.hour}:59`,
-        hour.orders.toString(),
-        `$${hour.revenue.toFixed(2)}`
-      ])
+    let y = 45;
+    doc.setFontSize(10);
+    Object.values(salesByHour).forEach(hour => {
+      doc.text(`${hour.hour}:00: ${hour.orders} orders, $${hour.revenue.toFixed(2)}`, 14, y);
+      y += 7;
     });
 
     doc.save(`hourly_sales_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -161,15 +151,15 @@ export default function PresetReports({ orders, products, customers, employees, 
     doc.setFontSize(12);
     doc.text(`Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`, 14, 30);
     
-    doc.autoTable({
-      startY: 40,
-      head: [['Rank', 'Product', 'Quantity Sold', 'Revenue']],
-      body: sorted.slice(0, 50).map((product, index) => [
-        (index + 1).toString(),
-        product.name,
-        product.quantity.toString(),
-        `$${product.revenue.toFixed(2)}`
-      ])
+    let y = 45;
+    doc.setFontSize(10);
+    sorted.slice(0, 30).forEach((product, index) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${index + 1}. ${product.name}: ${product.quantity} units, $${product.revenue.toFixed(2)}`, 14, y);
+      y += 7;
     });
 
     doc.save(`top_sellers_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -192,16 +182,16 @@ export default function PresetReports({ orders, products, customers, employees, 
     doc.setFontSize(12);
     doc.text(`Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`, 14, 30);
     
-    doc.autoTable({
-      startY: 40,
-      head: [['Employee', 'Orders', 'Revenue']],
-      body: Object.values(employeeSales)
-        .sort((a, b) => b.revenue - a.revenue)
-        .map(emp => [
-          employees.find(e => e.email === emp.email)?.full_name || emp.email,
-          emp.orders.toString(),
-          `$${emp.revenue.toFixed(2)}`
-        ])
+    let y = 45;
+    doc.setFontSize(10);
+    Object.values(employeeSales).sort((a, b) => b.revenue - a.revenue).forEach(emp => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      const empName = employees.find(e => e.email === emp.email)?.full_name || emp.email;
+      doc.text(`${empName}: ${emp.orders} orders, $${emp.revenue.toFixed(2)}`, 14, y);
+      y += 7;
     });
 
     doc.save(`employee_summary_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -226,17 +216,11 @@ export default function PresetReports({ orders, products, customers, employees, 
     
     const total = Object.values(paymentBreakdown).reduce((sum, p) => sum + p.revenue, 0);
     
-    doc.autoTable({
-      startY: 40,
-      head: [['Payment Method', 'Orders', 'Revenue', '% of Total']],
-      body: Object.values(paymentBreakdown)
-        .sort((a, b) => b.revenue - a.revenue)
-        .map(pm => [
-          pm.method,
-          pm.orders.toString(),
-          `$${pm.revenue.toFixed(2)}`,
-          `${((pm.revenue / total) * 100).toFixed(1)}%`
-        ])
+    let y = 45;
+    doc.setFontSize(10);
+    Object.values(paymentBreakdown).sort((a, b) => b.revenue - a.revenue).forEach(pm => {
+      doc.text(`${pm.method}: ${pm.orders} orders, $${pm.revenue.toFixed(2)} (${((pm.revenue / total) * 100).toFixed(1)}%)`, 14, y);
+      y += 7;
     });
 
     doc.save(`payment_methods_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -263,19 +247,17 @@ export default function PresetReports({ orders, products, customers, employees, 
     doc.setFontSize(12);
     doc.text(`Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`, 14, 30);
     
-    const sorted = Object.values(customerData)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 50);
+    const sorted = Object.values(customerData).sort((a, b) => b.revenue - a.revenue).slice(0, 30);
     
-    doc.autoTable({
-      startY: 40,
-      head: [['Customer', 'Orders', 'Total Spent', 'Avg Order']],
-      body: sorted.map(cust => [
-        cust.name,
-        cust.orders.toString(),
-        `$${cust.revenue.toFixed(2)}`,
-        `$${(cust.revenue / cust.orders).toFixed(2)}`
-      ])
+    let y = 45;
+    doc.setFontSize(10);
+    sorted.forEach(cust => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${cust.name}: ${cust.orders} orders, $${cust.revenue.toFixed(2)}`, 14, y);
+      y += 7;
     });
 
     doc.save(`customer_insights_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -301,12 +283,15 @@ export default function PresetReports({ orders, products, customers, employees, 
     doc.setFontSize(12);
     doc.text(`Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`, 14, 30);
     
-    doc.autoTable({
-      startY: 40,
-      head: [['Product', 'Units Sold']],
-      body: Object.values(inventory)
-        .sort((a, b) => b.sold - a.sold)
-        .map(item => [item.name, item.sold.toString()])
+    let y = 45;
+    doc.setFontSize(10);
+    Object.values(inventory).sort((a, b) => b.sold - a.sold).forEach(item => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${item.name}: ${item.sold} units`, 14, y);
+      y += 7;
     });
 
     doc.save(`inventory_movement_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -321,24 +306,19 @@ export default function PresetReports({ orders, products, customers, employees, 
     doc.setFontSize(12);
     doc.text(`Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`, 14, 30);
     
-    doc.autoTable({
-      startY: 40,
-      head: [['Order #', 'Date', 'Customer', 'Amount', 'Status']],
-      body: refunded.map(order => [
-        order.order_number,
-        new Date(order.created_date).toLocaleDateString(),
-        order.customer_name || 'Guest',
-        `$${(order.total || 0).toFixed(2)}`,
-        order.status
-      ]),
-      foot: [[
-        'TOTAL',
-        '',
-        '',
-        `$${refunded.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}`,
-        `${refunded.length} orders`
-      ]]
+    let y = 45;
+    doc.setFontSize(10);
+    refunded.forEach(order => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${order.order_number}: ${order.customer_name || 'Guest'}, $${(order.total || 0).toFixed(2)}`, 14, y);
+      y += 7;
     });
+
+    const total = refunded.reduce((sum, o) => sum + (o.total || 0), 0);
+    doc.text(`Total: $${total.toFixed(2)} (${refunded.length} orders)`, 14, y + 10);
 
     doc.save(`refunds_voids_${new Date().toISOString().split('T')[0]}.pdf`);
   };

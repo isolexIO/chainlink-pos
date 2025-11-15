@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Download, Clock, DollarSign, TrendingUp } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 
 export default function TimeTrackingReport({ employees, timeEntries, dateRange, loading }) {
   const getEmployeeTimeMetrics = () => {
@@ -85,16 +84,15 @@ export default function TimeTrackingReport({ employees, timeEntries, dateRange, 
     doc.setFontSize(12);
     doc.text(`Period: ${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`, 14, 30);
     
-    doc.autoTable({
-      startY: 40,
-      head: [['Employee', 'Hours', 'Rate', 'Pay', 'Shifts']],
-      body: metrics.map(emp => [
-        emp.name,
-        emp.totalHours.toFixed(2),
-        `$${emp.hourlyRate.toFixed(2)}`,
-        `$${emp.estimatedPay.toFixed(2)}`,
-        emp.shifts.toString()
-      ])
+    let y = 45;
+    doc.setFontSize(10);
+    metrics.slice(0, 25).forEach((emp) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.text(`${emp.name}: ${emp.totalHours.toFixed(1)}h - $${emp.estimatedPay.toFixed(2)}`, 14, y);
+      y += 7;
     });
 
     doc.save(`time_tracking_${new Date().toISOString().split('T')[0]}.pdf`);
