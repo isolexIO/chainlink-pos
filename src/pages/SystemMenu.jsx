@@ -1,0 +1,526 @@
+
+import { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { createPageUrl } from '@/utils';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { motion } from 'framer-motion';
+import {
+  Package,
+  Users,
+  Settings,
+  BarChart3,
+  CreditCard,
+  Globe,
+  Store,
+  HelpCircle,
+  ShoppingBag,
+  AlertCircle,
+  Clock, // Clock icon for Clock Out
+  DollarSign,
+  Link2,
+  Monitor,
+  FileText,
+  UserCircle,
+  LayoutGrid,
+  Box,
+  Shield, // Added Shield icon for Super Admin
+  MessageCircle, // Added MessageCircle icon for Live Support
+  Building2 // Added Building2 icon for Dealer Dashboard
+} from 'lucide-react';
+import AdvertisingTile from '../components/system-menu/AdvertisingTile';
+
+export default function SystemMenu() { // Renamed from SystemMenuPage
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isPinUserLoggedIn, setIsPinUserLoggedIn] = useState(false); // New state to track if a PIN user is logged in
+  const [stats, setStats] = useState({
+    pendingOrders: 0,
+    lowStockItems: 0,
+    openTickets: 0,
+    todaySales: 0
+  });
+
+  useEffect(() => {
+    loadUser();
+    loadStats();
+  }, []);
+
+  const loadUser = async () => {
+    try {
+      const pinUserJSON = localStorage.getItem('pinLoggedInUser');
+      let userData = null;
+
+      if (pinUserJSON) {
+        try {
+          userData = JSON.parse(pinUserJSON);
+          setIsPinUserLoggedIn(true); // A PIN user is logged in
+        } catch (e) {
+          console.error('Error parsing pinLoggedInUser:', e);
+          localStorage.removeItem('pinLoggedInUser'); // Clear invalid data
+        }
+      }
+
+      if (!userData) { // If no PIN user or parsing failed, attempt to load the merchant user
+        userData = await base44.auth.me();
+        setIsPinUserLoggedIn(false); // Ensure this is false if it's a direct merchant login
+      }
+
+      setUser(userData);
+    } catch (error) {
+      console.error('Error loading user:', error);
+      setIsPinUserLoggedIn(false); // Assume no PIN user if user loading fails
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const pinUserJSON = localStorage.getItem('pinLoggedInUser');
+      let currentUser = null;
+
+      if (pinUserJSON) {
+        try {
+          currentUser = JSON.parse(pinUserJSON);
+        } catch (e) {
+          console.error('Error parsing user:', e);
+        }
+      }
+
+      if (!currentUser) {
+        currentUser = await base44.auth.me();
+      }
+
+      if (!currentUser?.merchant_id) return;
+
+      // Load pending orders
+      const orders = await base44.entities.Order.filter({
+        merchant_id: currentUser.merchant_id,
+        status: { $in: ['pending', 'processing'] }
+      });
+
+      // Load low stock items
+      const products = await base44.entities.Product.filter({
+        merchant_id: currentUser.merchant_id,
+        is_active: true
+      });
+      const lowStock = products.filter(p => p.stock_quantity <= p.low_stock_alert);
+
+      // Load open tickets
+      const tickets = await base44.entities.SupportTicket.filter({
+        merchant_id: currentUser.merchant_id,
+        status: { $in: ['open', 'in_progress'] }
+      });
+
+      // Calculate today's sales
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayOrders = await base44.entities.Order.filter({
+        merchant_id: currentUser.merchant_id,
+        status: 'completed',
+        created_date: { $gte: today.toISOString() }
+      });
+      const todaySales = todayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+
+      setStats({
+        pendingOrders: orders.length,
+        lowStockItems: lowStock.length,
+        openTickets: tickets.length,
+        todaySales: todaySales.toFixed(2)
+      });
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+
+  const hasPermission = (permission) => {
+    if (permission === null) return true; // Items with null permission are always visible if present in menuItems
+    if (!user) return false;
+    if (user.role === 'super_admin' || user.role === 'admin' || user.role === 'dealer_admin') return true; // Admins and Dealer Admin have full access
+    if (user.role === 'merchant_admin') return true;
+    return user.permissions?.includes(permission);
+  };
+
+  const isSuperAdmin = () => {
+    return user && (user.role === 'super_admin' || user.role === 'admin');
+  };
+
+  const isDealerAdmin = () => {
+    return user && user.role === 'dealer_admin';
+  };
+
+  // Handler for staff clock out
+  const handleClockOut = () => {
+    if (confirm('Are you sure you want to clock out?')) {
+      localStorage.removeItem('pinLoggedInUser'); // Clear the PIN user session
+      window.location.href = createPageUrl('Home'); // Redirect to Home screen
+    }
+  };
+
+  // Handler for merchant full logout
+  const handleMerchantLogout = async () => {
+    if (confirm('Are you sure you want to log out of your merchant account?')) {
+      try {
+        localStorage.removeItem('pinLoggedInUser'); // Clear any potential staff session first
+        await base44.auth.logout(createPageUrl('Home')); // Perform API logout and redirect to Home
+      } catch (error) {
+        console.error('Merchant Logout error:', error);
+        localStorage.removeItem('pinLoggedInUser'); // Ensure local storage is cleared even if API call fails
+        window.location.href = createPageUrl('Home'); // Redirect to Home
+      }
+    }
+  };
+
+  // Add dealer dashboard tile for dealer_admins
+  const getDealerTile = () => {
+    if (isDealerAdmin()) {
+      return {
+        id: 'dealer_dashboard',
+        icon: <Building2 className="w-6 h-6" />,
+        title: 'Dealer Dashboard',
+        description: 'Manage merchants and commissions',
+        path: 'DealerDashboard',
+        color: 'from-purple-500 to-pink-500',
+        permission: null // Visible to dealer_admin role
+      };
+    }
+    return null;
+  };
+
+  // Super Admin tile - only visible to super admins
+  const getSuperAdminTile = () => {
+    if (isSuperAdmin()) {
+      return {
+        id: 'super_admin',
+        icon: <Shield className="w-6 h-6" />,
+        title: 'Super Admin',
+        description: 'Platform management',
+        path: 'SuperAdmin',
+        color: 'from-red-600 to-red-700',
+        permission: 'super_admin_only' // This permission is handled by getVisibleItems, or directly by isSuperAdmin()
+      };
+    }
+    return null;
+  };
+
+
+  const baseMenuItems = [
+    {
+      id: 'pos',
+      icon: <CreditCard className="w-6 h-6" />,
+      title: 'Point of Sale',
+      description: 'Process orders and payments',
+      path: 'POS',
+      color: 'from-blue-500 to-blue-600',
+      permission: 'process_orders'
+    },
+    {
+      id: 'products',
+      icon: <Package className="w-6 h-6" />,
+      title: 'Products',
+      description: 'Manage product catalog',
+      path: 'Products',
+      color: 'from-purple-500 to-purple-600',
+      permission: 'manage_inventory'
+    },
+    {
+      id: 'customers',
+      icon: <Users className="w-6 h-6" />,
+      title: 'Customers',
+      description: 'Customer management',
+      path: 'Customers',
+      color: 'from-green-500 to-green-600',
+      permission: 'manage_customers'
+    },
+    {
+      id: 'orders',
+      icon: <FileText className="w-6 h-6" />,
+      title: 'Orders',
+      description: 'View order history',
+      path: 'Orders',
+      color: 'from-orange-500 to-orange-600',
+      permission: 'process_orders'
+    },
+    {
+      id: 'reports',
+      icon: <BarChart3 className="w-6 h-6" />,
+      title: 'Reports',
+      description: 'Sales analytics',
+      path: 'Reports',
+      color: 'from-pink-500 to-pink-600',
+      permission: 'view_reports'
+    },
+    {
+      id: 'online_menu',
+      icon: <Globe className="w-6 h-6" />,
+      title: 'Online Menu',
+      description: 'Public ordering page',
+      path: 'OnlineMenu',
+      color: 'from-indigo-500 to-indigo-600',
+      permission: 'process_orders'
+    },
+    {
+      id: 'online_orders',
+      icon: <ShoppingBag className="w-6 h-6" />,
+      title: 'Online Orders',
+      description: 'Manage online orders',
+      path: 'OnlineOrders',
+      color: 'from-teal-500 to-teal-600',
+      permission: 'process_orders'
+    },
+    {
+      id: 'marketplace',
+      icon: <Store className="w-6 h-6" />,
+      title: 'Marketplace',
+      description: 'Integrations',
+      path: 'Marketplace',
+      color: 'from-yellow-500 to-yellow-600',
+      permission: 'access_marketplace'
+    },
+    {
+      id: 'settings',
+      icon: <Settings className="w-6 h-6" />,
+      title: 'Settings',
+      description: 'System configuration',
+      path: 'Settings',
+      color: 'from-gray-500 to-gray-600',
+      permission: 'admin_settings'
+    },
+    {
+      id: 'users',
+      icon: <UserCircle className="w-6 h-6" />,
+      title: 'Users',
+      description: 'Staff management',
+      path: 'Users',
+      color: 'from-red-500 to-red-600',
+      permission: 'manage_users'
+    },
+    {
+      id: 'departments',
+      icon: <LayoutGrid className="w-6 h-6" />,
+      title: 'Departments',
+      description: 'Organize products',
+      path: 'Departments',
+      color: 'from-cyan-500 to-cyan-600',
+      permission: 'manage_inventory'
+    },
+    {
+      id: 'inventory',
+      icon: <Box className="w-6 h-6" />,
+      title: 'Inventory',
+      description: 'Stock management',
+      path: 'Inventory',
+      color: 'from-lime-500 to-lime-600',
+      permission: 'manage_inventory'
+    },
+    {
+      id: 'device_monitor',
+      icon: <Monitor className="w-6 h-6" />,
+      title: 'Device Monitor',
+      description: 'Track active sessions',
+      path: 'DeviceMonitor',
+      color: 'from-violet-500 to-violet-600',
+      permission: 'admin_settings'
+    },
+    // Removed the previous 'Support' item as it's replaced by a hardcoded 'Live Support' card.
+  ];
+
+  const menuItems = [
+    getDealerTile(),
+    getSuperAdminTile(),
+    ...baseMenuItems
+  ].filter(Boolean); // Filter out any null entries (e.g., if a tile is not applicable)
+
+  const getVisibleItems = () => {
+    return menuItems.filter(item => {
+      // Special handling for super admin tile, as its permission isn't directly a user permission but a role check
+      if (item.id === 'super_admin' && item.permission === 'super_admin_only') {
+        return isSuperAdmin();
+      }
+      // Special handling for dealer dashboard tile
+      if (item.id === 'dealer_dashboard' && item.permission === null) {
+        return isDealerAdmin();
+      }
+      return hasPermission(item.permission);
+    });
+  };
+
+  const handleNavigate = (path) => {
+    window.location.href = createPageUrl(path);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const visibleItems = getVisibleItems();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header - Rebranded section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <div className="flex justify-center mb-6">
+            <div className="w-24 h-24 rounded-2xl flex items-center justify-center shadow-2xl"
+                 style={{background: 'linear-gradient(135deg, #7B2FD6 0%, #0FD17A 100%)'}}>
+              <Link2 className="w-14 h-14 text-white" />
+            </div>
+          </div>
+          <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-2">
+            ChainLINK POS
+          </h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400">
+            Blockchain-Powered Point of Sale System
+          </p>
+        </motion.div>
+
+        {/* Quick Stats */}
+        {user?.merchant_id && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card className="bg-white dark:bg-gray-800">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Pending Orders</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pendingOrders}</p>
+                  </div>
+                  <Clock className="w-8 h-8 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white dark:bg-gray-800">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Low Stock Items</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.lowStockItems}</p>
+                  </div>
+                  <AlertCircle className="w-8 h-8 text-orange-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white dark:bg-gray-800">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Open Tickets</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.openTickets}</p>
+                  </div>
+                  <HelpCircle className="w-8 h-8 text-purple-500" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white dark:bg-gray-800">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Today's Sales</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">${stats.todaySales}</p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Advertising Tile - Featured Section */}
+        <div className="mb-8">
+          <AdvertisingTile />
+        </div>
+
+        {/* Main Menu Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {visibleItems.map((item) => {
+            return (
+              <Card
+                key={item.id}
+                className={`group hover:shadow-xl hover:scale-105 transition-all cursor-pointer dark:bg-gray-800 bg-white`}
+                onClick={() => handleNavigate(item.path)}
+              >
+                <CardHeader className="p-6">
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${item.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                    {item.icon}
+                  </div>
+                  <CardTitle className="font-semibold text-lg text-gray-900 dark:text-white mb-1">
+                    {item.title}
+                  </CardTitle>
+                  <CardDescription className="text-sm text-gray-500 dark:text-gray-400">
+                    {item.description}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            );
+          })}
+
+          {/* Support - Updated to use Tawk.to */}
+          <Card
+            className="group hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-purple-400 dark:bg-gray-800 bg-white"
+            onClick={() => window.open('https://tawk.to/chat/66c9efd2ea492f34bc09af03/1i62d1jbm', '_blank')}
+          >
+            <CardHeader className="p-6">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <MessageCircle className="w-6 h-6 text-white" />
+              </div>
+              <CardTitle className="font-semibold text-lg text-gray-900 dark:text-white mb-1 group-hover:text-purple-600 transition-colors">
+                Live Support
+              </CardTitle>
+              <CardDescription className="text-sm text-gray-500 dark:text-gray-400">
+                Chat with our support team
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+
+        {/* User Guide Link */}
+        <div className="mt-8 text-center">
+          <button
+            onClick={() => handleNavigate('Support')}
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            <HelpCircle className="w-5 h-5" />
+            <span>Need help? View User Guide & Support</span>
+          </button>
+        </div>
+
+        {/* Conditional Logout Buttons */}
+        <div className="mt-8 text-center flex flex-col items-center gap-4">
+          {isPinUserLoggedIn ? (
+            // Show Clock Out button if a PIN user is logged in
+            <button
+              onClick={handleClockOut}
+              className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+            >
+              <Clock className="w-5 h-5" />
+              <span>Clock Out</span>
+            </button>
+          ) : (
+            // Show Merchant Logout button if it's a direct merchant login
+            <button
+              onClick={handleMerchantLogout}
+              className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+            >
+              <AlertCircle className="w-5 h-5" />
+              <span>Merchant Logout</span>
+            </button>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,660 @@
+
+import { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label'; // Added Label import
+import {
+  Search,
+  Ban,
+  CheckCircle,
+  Trash2,
+  Eye,
+  RefreshCw,
+  Plus
+} from 'lucide-react';
+import { createPageUrl } from '@/utils';
+
+export default function MerchantManagement({ onUpdate }) {
+  const [merchants, setMerchants] = useState([]);
+  const [filteredMerchants, setFilteredMerchants] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedMerchant, setSelectedMerchant] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showAddMerchant, setShowAddMerchant] = useState(false); // New state for add merchant dialog
+  const [loading, setLoading] = useState(true);
+
+  // New state for new merchant form data
+  const [newMerchant, setNewMerchant] = useState({
+    business_name: '',
+    display_name: '',
+    owner_name: '',
+    owner_email: '',
+    phone: '',
+    address: '',
+    tax_id: '',
+    subscription_plan: 'free',
+    status: 'trial'
+  });
+
+  useEffect(() => {
+    loadMerchants();
+  }, []);
+
+  useEffect(() => {
+    filterMerchants();
+  }, [searchTerm, statusFilter, merchants]);
+
+  const loadMerchants = async () => {
+    try {
+      setLoading(true);
+      const merchantList = await base44.entities.Merchant.list('-created_date');
+      setMerchants(merchantList);
+    } catch (error) {
+      console.error('Error loading merchants:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterMerchants = () => {
+    let filtered = merchants;
+
+    if (searchTerm) {
+      filtered = filtered.filter(m =>
+        m.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.owner_email?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(m => m.status === statusFilter);
+    }
+
+    setFilteredMerchants(filtered);
+  };
+
+  const handleStatusChange = async (merchant, newStatus) => {
+    try {
+      const updates = { status: newStatus };
+      
+      if (newStatus === 'suspended') {
+        updates.suspended_at = new Date().toISOString();
+        updates.suspension_reason = 'Manually suspended by admin';
+      } else if (newStatus === 'active') {
+        updates.suspended_at = null;
+        updates.suspension_reason = null;
+      }
+
+      await base44.entities.Merchant.update(merchant.id, updates);
+      
+      // Log the action
+      await base44.entities.SystemLog.create({
+        log_type: 'super_admin_action',
+        action: `Merchant status changed to ${newStatus}`,
+        description: `Merchant ${merchant.business_name} status changed from ${merchant.status} to ${newStatus}`,
+        user_email: (await base44.auth.me()).email,
+        user_role: 'super_admin',
+        merchant_id: merchant.id,
+        severity: 'info'
+      });
+
+      await loadMerchants();
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error updating merchant status:', error);
+      alert('Failed to update merchant status');
+    }
+  };
+
+  const handleImpersonate = async (merchant) => {
+    try {
+      const currentUser = await base44.auth.me();
+      
+      // Store original admin user data in localStorage for later restoration
+      localStorage.setItem('impersonationData', JSON.stringify({
+        originalUser: currentUser,
+        impersonatedMerchant: {
+          id: merchant.id,
+          business_name: merchant.business_name
+        },
+        timestamp: new Date().toISOString()
+      }));
+
+      // Create a temporary impersonation user object
+      const impersonationUser = {
+        ...currentUser,
+        merchant_id: merchant.id,
+        role: 'merchant_admin',
+        permissions: [
+          'process_orders',
+          'manage_inventory',
+          'view_reports',
+          'manage_customers',
+          'process_refunds',
+          'admin_settings',
+          'manage_users',
+          'access_marketplace',
+          'configure_devices',
+          'configure_payments',
+          'manage_subscriptions',
+          'submit_tickets',
+          'view_all_tickets'
+        ],
+        is_impersonating: true
+      };
+
+      // Store impersonation user in PIN login storage
+      localStorage.setItem('pinLoggedInUser', JSON.stringify(impersonationUser));
+
+      // Log the action
+      await base44.entities.SystemLog.create({
+        log_type: 'super_admin_action',
+        action: 'Merchant impersonation started',
+        description: `Super admin ${currentUser.email} started impersonating merchant: ${merchant.business_name}`,
+        user_email: currentUser.email,
+        user_role: 'super_admin',
+        merchant_id: merchant.id,
+        severity: 'warning'
+      });
+
+      // Redirect to System Menu using createPageUrl
+      window.location.href = createPageUrl('SystemMenu');
+    } catch (error) {
+      console.error('Error impersonating merchant:', error);
+      alert('Failed to impersonate merchant. Please try again.');
+    }
+  };
+
+  const handleDelete = async (merchant) => {
+    if (!window.confirm(`Are you sure you want to DELETE ${merchant.business_name}?\n\nThis action cannot be undone and will remove all merchant data.`)) {
+      return;
+    }
+
+    try {
+      await base44.entities.Merchant.delete(merchant.id);
+      
+      await base44.entities.SystemLog.create({
+        log_type: 'super_admin_action',
+        action: 'Merchant deleted',
+        description: `Merchant ${merchant.business_name} was permanently deleted`,
+        user_email: (await base44.auth.me()).email,
+        user_role: 'super_admin',
+        severity: 'critical'
+      });
+
+      await loadMerchants();
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error deleting merchant:', error);
+      alert('Failed to delete merchant');
+    }
+  };
+
+  const handleAddMerchant = async () => {
+    if (!newMerchant.business_name || !newMerchant.owner_email || !newMerchant.owner_name) {
+      alert('Please fill in all required fields (Business Name, Owner Name, Owner Email)');
+      return;
+    }
+
+    try {
+      // Calculate trial end date (14 days from now)
+      const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+      // Create merchant
+      const merchant = await base44.entities.Merchant.create({
+        business_name: newMerchant.business_name,
+        display_name: newMerchant.display_name || newMerchant.business_name,
+        owner_name: newMerchant.owner_name,
+        owner_email: newMerchant.owner_email,
+        phone: newMerchant.phone,
+        address: newMerchant.address,
+        tax_id: newMerchant.tax_id,
+        subscription_plan: newMerchant.subscription_plan,
+        status: newMerchant.status,
+        activated_at: newMerchant.status === 'active' ? new Date().toISOString() : null,
+        trial_ends_at: newMerchant.status === 'trial' ? trialEndsAt : null, // Set trial end date only if status is trial
+        settings: {
+          timezone: 'America/New_York',
+          currency: 'USD',
+          tax_rate: 0.08
+        },
+        onboarding_completed: false,
+        features_enabled: ['pos', 'inventory', 'reports']
+      });
+
+      // Determine subscription status and end dates based on merchant status
+      let subStatus = 'trial';
+      let subCurrentPeriodEnd = trialEndsAt;
+      let subNextBillingDate = trialEndsAt;
+      if (newMerchant.status === 'active') {
+        subStatus = 'active';
+        // For active, set end and next billing to a month from now (example)
+        subCurrentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        subNextBillingDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      }
+
+
+      // Create default subscription for the merchant
+      await base44.entities.Subscription.create({
+        merchant_id: merchant.id,
+        plan_name: newMerchant.subscription_plan,
+        price: newMerchant.subscription_plan === 'free' ? 0 : (newMerchant.subscription_plan === 'basic' ? 49 : (newMerchant.subscription_plan === 'pro' ? 99 : 299)), // Example pricing
+        billing_cycle: 'monthly',
+        status: subStatus,
+        current_period_start: new Date().toISOString(),
+        current_period_end: subCurrentPeriodEnd,
+        next_billing_date: subNextBillingDate
+      });
+
+      // Log the action
+      await base44.entities.SystemLog.create({
+        log_type: 'super_admin_action',
+        action: 'Merchant created',
+        description: `New merchant created: ${newMerchant.business_name}`,
+        user_email: (await base44.auth.me()).email,
+        user_role: 'super_admin',
+        merchant_id: merchant.id,
+        severity: 'info'
+      });
+
+      alert(`Merchant "${newMerchant.business_name}" created successfully! They can now register at the app.`);
+      
+      setShowAddMerchant(false);
+      setNewMerchant({ // Reset form
+        business_name: '',
+        display_name: '',
+        owner_name: '',
+        owner_email: '',
+        phone: '',
+        address: '',
+        tax_id: '',
+        subscription_plan: 'free',
+        status: 'trial'
+      });
+      
+      await loadMerchants();
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error creating merchant:', error);
+      alert('Failed to create merchant. Please try again.');
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const configs = {
+      active: { color: 'bg-green-100 text-green-800', label: 'Active' },
+      trial: { color: 'bg-blue-100 text-blue-800', label: 'Trial' },
+      suspended: { color: 'bg-red-100 text-red-800', label: 'Suspended' },
+      cancelled: { color: 'bg-gray-100 text-gray-800', label: 'Cancelled' }
+    };
+    const config = configs[status] || configs.trial;
+    return <Badge className={config.color}>{config.label}</Badge>;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <CardTitle>Merchant Management</CardTitle>
+          <Button onClick={() => setShowAddMerchant(true)}> {/* Updated onClick */}
+            <Plus className="w-4 h-4 mr-2" />
+            Add Merchant
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {/* Filters */}
+        <div className="flex gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Search merchants..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="trial">Trial</SelectItem>
+              <SelectItem value="suspended">Suspended</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" onClick={loadMerchants}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+
+        {/* Merchants Table */}
+        <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Business Name</TableHead>
+                <TableHead>Owner</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Revenue</TableHead>
+                <TableHead className="text-right">Orders</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                    Loading merchants...
+                  </TableCell>
+                </TableRow>
+              ) : filteredMerchants.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                    No merchants found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredMerchants.map((merchant) => (
+                  <TableRow key={merchant.id}>
+                    <TableCell className="font-medium">{merchant.business_name}</TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{merchant.owner_name}</div>
+                        <div className="text-gray-500">{merchant.owner_email}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">
+                        {merchant.subscription_plan}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(merchant.status)}</TableCell>
+                    <TableCell className="text-right">
+                      ${(merchant.total_revenue || 0).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {merchant.total_orders || 0}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedMerchant(merchant);
+                            setShowDetails(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        {merchant.status === 'active' ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleStatusChange(merchant, 'suspended')}
+                          >
+                            <Ban className="w-4 h-4 text-red-500" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleStatusChange(merchant, 'active')}
+                          >
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(merchant)}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+
+      {/* Merchant Details Dialog */}
+      {selectedMerchant && (
+        <Dialog open={showDetails} onOpenChange={setShowDetails}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{selectedMerchant.business_name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Business Information</h4>
+                  <div className="space-y-1 text-sm">
+                    <div><span className="text-gray-500">Owner:</span> {selectedMerchant.owner_name}</div>
+                    <div><span className="text-gray-500">Email:</span> {selectedMerchant.owner_email}</div>
+                    <div><span className="text-gray-500">Phone:</span> {selectedMerchant.phone || 'N/A'}</div>
+                    <div><span className="text-gray-500">Address:</span> {selectedMerchant.address || 'N/A'}</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Subscription</h4>
+                  <div className="space-y-1 text-sm">
+                    <div><span className="text-gray-500">Plan:</span> <Badge className="capitalize">{selectedMerchant.subscription_plan}</Badge></div>
+                    <div><span className="text-gray-500">Status:</span> {getStatusBadge(selectedMerchant.status)}</div>
+                    <div><span className="text-gray-500">Trial Ends:</span> {selectedMerchant.trial_ends_at ? new Date(selectedMerchant.trial_ends_at).toLocaleDateString() : 'N/A'}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h4 className="font-semibold mb-2">Performance</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-3 bg-gray-50 rounded">
+                    <div className="text-2xl font-bold">{selectedMerchant.total_orders || 0}</div>
+                    <div className="text-sm text-gray-500">Total Orders</div>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded">
+                    <div className="text-2xl font-bold">${(selectedMerchant.total_revenue || 0).toFixed(0)}</div>
+                    <div className="text-sm text-gray-500">Total Revenue</div>
+                  </div>
+                  <div className="text-center p-3 bg-gray-50 rounded">
+                    <div className="text-2xl font-bold">
+                      {selectedMerchant.total_orders > 0
+                        ? `$${(selectedMerchant.total_revenue / selectedMerchant.total_orders).toFixed(2)}`
+                        : '$0'}
+                    </div>
+                    <div className="text-sm text-gray-500">Avg Order Value</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 justify-end pt-4 border-t">
+                <Button variant="outline" onClick={() => handleImpersonate(selectedMerchant)}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  Impersonate
+                </Button>
+                <Button variant="outline" onClick={() => setShowDetails(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Add Merchant Dialog */}
+      <Dialog open={showAddMerchant} onOpenChange={setShowAddMerchant}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Merchant</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="business_name">Business Name *</Label>
+                <Input
+                  id="business_name"
+                  value={newMerchant.business_name}
+                  onChange={(e) => setNewMerchant({ ...newMerchant, business_name: e.target.value })}
+                  placeholder="ABC Restaurant"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="display_name">Display Name</Label>
+                <Input
+                  id="display_name"
+                  value={newMerchant.display_name}
+                  onChange={(e) => setNewMerchant({ ...newMerchant, display_name: e.target.value })}
+                  placeholder="Leave blank to use business name"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="owner_name">Owner Name *</Label>
+                <Input
+                  id="owner_name"
+                  value={newMerchant.owner_name}
+                  onChange={(e) => setNewMerchant({ ...newMerchant, owner_name: e.target.value })}
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="owner_email">Owner Email *</Label>
+                <Input
+                  id="owner_email"
+                  type="email"
+                  value={newMerchant.owner_email}
+                  onChange={(e) => setNewMerchant({ ...newMerchant, owner_email: e.target.value })}
+                  placeholder="owner@business.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={newMerchant.phone}
+                  onChange={(e) => setNewMerchant({ ...newMerchant, phone: e.target.value })}
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="tax_id">Tax ID / EIN</Label>
+                <Input
+                  id="tax_id"
+                  value={newMerchant.tax_id}
+                  onChange={(e) => setNewMerchant({ ...newMerchant, tax_id: e.target.value })}
+                  placeholder="12-3456789"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="address">Business Address</Label>
+              <Input
+                id="address"
+                value={newMerchant.address}
+                onChange={(e) => setNewMerchant({ ...newMerchant, address: e.target.value })}
+                placeholder="123 Main St, City, State 12345"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="subscription_plan">Initial Subscription Plan</Label>
+                <Select
+                  value={newMerchant.subscription_plan}
+                  onValueChange={(value) => setNewMerchant({ ...newMerchant, subscription_plan: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a plan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="free">Free - $0/mo</SelectItem>
+                    <SelectItem value="basic">Basic - $49/mo</SelectItem>
+                    <SelectItem value="pro">Pro - $99/mo</SelectItem>
+                    <SelectItem value="enterprise">Enterprise - $299/mo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="status">Initial Status</Label>
+                <Select
+                  value={newMerchant.status}
+                  onValueChange={(value) => setNewMerchant({ ...newMerchant, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="trial">Trial (14 days)</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                <strong>Note:</strong> After creating the merchant, they will need to register an account 
+                using the owner email address to access the system. They will start with a 14-day trial period
+                (unless status is set to Active).
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setShowAddMerchant(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddMerchant}>
+              Create Merchant
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
