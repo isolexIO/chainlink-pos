@@ -1,38 +1,46 @@
-
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
 import {
+  ShoppingCart,
   Package,
   Users,
   Settings,
   BarChart3,
   CreditCard,
+  Smartphone,
   Globe,
   Store,
   HelpCircle,
   ShoppingBag,
+  LifeBuoy,
   AlertCircle,
-  Clock, // Clock icon for Clock Out
+  Crown,
+  Clock,
   DollarSign,
+  Zap,
+  Layers,
   Link2,
   Monitor,
+  Receipt,
   FileText,
   UserCircle,
   LayoutGrid,
   Box,
-  Shield, // Added Shield icon for Super Admin
-  MessageCircle, // Added MessageCircle icon for Live Support
-  Building2 // Added Building2 icon for Dealer Dashboard
+  Shield,
+  MessageCircle,
+  Building2,
+  Gift
 } from 'lucide-react';
 import AdvertisingTile from '../components/system-menu/AdvertisingTile';
 
-export default function SystemMenu() { // Renamed from SystemMenuPage
+export default function SystemMenu() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isPinUserLoggedIn, setIsPinUserLoggedIn] = useState(false); // New state to track if a PIN user is logged in
+  const [isPinUserLoggedIn, setIsPinUserLoggedIn] = useState(false);
   const [stats, setStats] = useState({
     pendingOrders: 0,
     lowStockItems: 0,
@@ -53,22 +61,22 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
       if (pinUserJSON) {
         try {
           userData = JSON.parse(pinUserJSON);
-          setIsPinUserLoggedIn(true); // A PIN user is logged in
+          setIsPinUserLoggedIn(true);
         } catch (e) {
           console.error('Error parsing pinLoggedInUser:', e);
-          localStorage.removeItem('pinLoggedInUser'); // Clear invalid data
+          localStorage.removeItem('pinLoggedInUser');
         }
       }
 
-      if (!userData) { // If no PIN user or parsing failed, attempt to load the merchant user
+      if (!userData) {
         userData = await base44.auth.me();
-        setIsPinUserLoggedIn(false); // Ensure this is false if it's a direct merchant login
+        setIsPinUserLoggedIn(false);
       }
 
       setUser(userData);
     } catch (error) {
       console.error('Error loading user:', error);
-      setIsPinUserLoggedIn(false); // Assume no PIN user if user loading fails
+      setIsPinUserLoggedIn(false);
     } finally {
       setLoading(false);
     }
@@ -93,26 +101,22 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
 
       if (!currentUser?.merchant_id) return;
 
-      // Load pending orders
       const orders = await base44.entities.Order.filter({
         merchant_id: currentUser.merchant_id,
         status: { $in: ['pending', 'processing'] }
       });
 
-      // Load low stock items
       const products = await base44.entities.Product.filter({
         merchant_id: currentUser.merchant_id,
         is_active: true
       });
       const lowStock = products.filter(p => p.stock_quantity <= p.low_stock_alert);
 
-      // Load open tickets
       const tickets = await base44.entities.SupportTicket.filter({
         merchant_id: currentUser.merchant_id,
         status: { $in: ['open', 'in_progress'] }
       });
 
-      // Calculate today's sales
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const todayOrders = await base44.entities.Order.filter({
@@ -134,9 +138,9 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
   };
 
   const hasPermission = (permission) => {
-    if (permission === null) return true; // Items with null permission are always visible if present in menuItems
+    if (permission === null) return true;
     if (!user) return false;
-    if (user.role === 'super_admin' || user.role === 'admin' || user.role === 'dealer_admin') return true; // Admins and Dealer Admin have full access
+    if (user.role === 'super_admin' || user.role === 'admin' || user.role === 'dealer_admin') return true;
     if (user.role === 'merchant_admin') return true;
     return user.permissions?.includes(permission);
   };
@@ -149,29 +153,26 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
     return user && user.role === 'dealer_admin';
   };
 
-  // Handler for staff clock out
   const handleClockOut = () => {
     if (confirm('Are you sure you want to clock out?')) {
-      localStorage.removeItem('pinLoggedInUser'); // Clear the PIN user session
-      window.location.href = createPageUrl('Home'); // Redirect to Home screen
+      localStorage.removeItem('pinLoggedInUser');
+      window.location.href = createPageUrl('Home');
     }
   };
 
-  // Handler for merchant full logout
   const handleMerchantLogout = async () => {
     if (confirm('Are you sure you want to log out of your merchant account?')) {
       try {
-        localStorage.removeItem('pinLoggedInUser'); // Clear any potential staff session first
-        await base44.auth.logout(createPageUrl('Home')); // Perform API logout and redirect to Home
+        localStorage.removeItem('pinLoggedInUser');
+        await base44.auth.logout(createPageUrl('Home'));
       } catch (error) {
         console.error('Merchant Logout error:', error);
-        localStorage.removeItem('pinLoggedInUser'); // Ensure local storage is cleared even if API call fails
-        window.location.href = createPageUrl('Home'); // Redirect to Home
+        localStorage.removeItem('pinLoggedInUser');
+        window.location.href = createPageUrl('Home');
       }
     }
   };
 
-  // Add dealer dashboard tile for dealer_admins
   const getDealerTile = () => {
     if (isDealerAdmin()) {
       return {
@@ -181,13 +182,12 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
         description: 'Manage merchants and commissions',
         path: 'DealerDashboard',
         color: 'from-purple-500 to-pink-500',
-        permission: null // Visible to dealer_admin role
+        permission: null
       };
     }
     return null;
   };
 
-  // Super Admin tile - only visible to super admins
   const getSuperAdminTile = () => {
     if (isSuperAdmin()) {
       return {
@@ -197,12 +197,11 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
         description: 'Platform management',
         path: 'SuperAdmin',
         color: 'from-red-600 to-red-700',
-        permission: 'super_admin_only' // This permission is handled by getVisibleItems, or directly by isSuperAdmin()
+        permission: 'super_admin_only'
       };
     }
     return null;
   };
-
 
   const baseMenuItems = [
     {
@@ -231,6 +230,15 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
       path: 'Customers',
       color: 'from-green-500 to-green-600',
       permission: 'manage_customers'
+    },
+    {
+      id: 'loyalty',
+      icon: <Gift className="w-6 h-6" />,
+      title: 'Loyalty Program',
+      description: 'Rewards and points',
+      path: 'LoyaltyProgram',
+      color: 'from-pink-500 to-rose-600',
+      permission: 'manage_settings'
     },
     {
       id: 'orders',
@@ -289,7 +297,7 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
     {
       id: 'users',
       icon: <UserCircle className="w-6 h-6" />,
-      title: 'Users',
+      title: 'Employees',
       description: 'Staff management',
       path: 'Users',
       color: 'from-red-500 to-red-600',
@@ -322,22 +330,19 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
       color: 'from-violet-500 to-violet-600',
       permission: 'admin_settings'
     },
-    // Removed the previous 'Support' item as it's replaced by a hardcoded 'Live Support' card.
   ];
 
   const menuItems = [
     getDealerTile(),
     getSuperAdminTile(),
     ...baseMenuItems
-  ].filter(Boolean); // Filter out any null entries (e.g., if a tile is not applicable)
+  ].filter(Boolean);
 
   const getVisibleItems = () => {
     return menuItems.filter(item => {
-      // Special handling for super admin tile, as its permission isn't directly a user permission but a role check
       if (item.id === 'super_admin' && item.permission === 'super_admin_only') {
         return isSuperAdmin();
       }
-      // Special handling for dealer dashboard tile
       if (item.id === 'dealer_dashboard' && item.permission === null) {
         return isDealerAdmin();
       }
@@ -365,7 +370,6 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header - Rebranded section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -385,7 +389,6 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
           </p>
         </motion.div>
 
-        {/* Quick Stats */}
         {user?.merchant_id && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Card className="bg-white dark:bg-gray-800">
@@ -438,12 +441,10 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
           </div>
         )}
 
-        {/* Advertising Tile - Featured Section */}
         <div className="mb-8">
           <AdvertisingTile />
         </div>
 
-        {/* Main Menu Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {visibleItems.map((item) => {
             return (
@@ -467,7 +468,6 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
             );
           })}
 
-          {/* Support - Updated to use Tawk.to */}
           <Card
             className="group hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-purple-400 dark:bg-gray-800 bg-white"
             onClick={() => window.open('https://tawk.to/chat/66c9efd2ea492f34bc09af03/1i62d1jbm', '_blank')}
@@ -486,7 +486,6 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
           </Card>
         </div>
 
-        {/* User Guide Link */}
         <div className="mt-8 text-center">
           <button
             onClick={() => handleNavigate('Support')}
@@ -497,10 +496,8 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
           </button>
         </div>
 
-        {/* Conditional Logout Buttons */}
         <div className="mt-8 text-center flex flex-col items-center gap-4">
           {isPinUserLoggedIn ? (
-            // Show Clock Out button if a PIN user is logged in
             <button
               onClick={handleClockOut}
               className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
@@ -509,7 +506,6 @@ export default function SystemMenu() { // Renamed from SystemMenuPage
               <span>Clock Out</span>
             </button>
           ) : (
-            // Show Merchant Logout button if it's a direct merchant login
             <button
               onClick={handleMerchantLogout}
               className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
