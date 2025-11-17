@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Store, CheckCircle, Loader2 } from 'lucide-react';
+import { Store, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
 export default function MerchantOnboarding() {
@@ -28,7 +28,9 @@ export default function MerchantOnboarding() {
     setError('');
 
     try {
+      console.log('Submitting merchant signup...', formData);
       const response = await base44.functions.invoke('createMerchantAccount', formData);
+      console.log('Response received:', response);
 
       if (response.success) {
         setCredentials({
@@ -42,7 +44,8 @@ export default function MerchantOnboarding() {
       }
     } catch (err) {
       console.error('Merchant signup error:', err);
-      setError(err.message || 'Failed to create merchant account. Please try again.');
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to create merchant account. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -128,8 +131,12 @@ export default function MerchantOnboarding() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4">
-                <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-red-800 dark:text-red-200 text-sm font-medium">Error creating account</p>
+                  <p className="text-red-700 dark:text-red-300 text-sm mt-1">{error}</p>
+                </div>
               </div>
             )}
 
