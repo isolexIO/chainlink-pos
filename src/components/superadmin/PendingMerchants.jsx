@@ -48,8 +48,7 @@ export default function PendingMerchants() {
 
     setInviting(true);
     try {
-      // Send activation email using custom SMTP
-      await base44.functions.invoke('sendEmail', {
+      const response = await base44.functions.invoke('sendEmail', {
         to: selectedMerchant.owner_email,
         subject: 'ChainLINK POS - Your Account is Ready!',
         html: `
@@ -69,6 +68,8 @@ export default function PendingMerchants() {
         text: `Great news, ${selectedMerchant.owner_name}!\n\nYour ChainLINK POS account has been activated and is ready to use.\n\nYour Login Credentials:\nEmail: ${selectedMerchant.owner_email}\nPIN: ${pin}\nTemporary Password: ${tempPassword}\n\nYou can now log in at your POS system using your 6-digit PIN for quick access.\nYour 30-day free trial has started!\n\nClick here to log in: ${window.location.origin}`
       });
 
+      console.log('Email response:', response);
+
       // Set up demo data if requested
       if (selectedMerchant.settings?.demo_data_requested) {
         try {
@@ -87,7 +88,8 @@ export default function PendingMerchants() {
       setPin('');
       setTempPassword('');
     } catch (error) {
-      alert('Failed to send activation email: ' + error.message);
+      console.error('Failed to send activation email:', error);
+      alert('Failed to send activation email: ' + (error.response?.data?.error || error.message));
     } finally {
       setInviting(false);
     }

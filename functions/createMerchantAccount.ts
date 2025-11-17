@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { Base44Client } from 'npm:@base44/sdk@0.8.4';
 import nodemailer from 'npm:nodemailer@6.9.7';
 
 Deno.serve(async (req) => {
@@ -22,10 +22,14 @@ Deno.serve(async (req) => {
             }, { status: 400 });
         }
 
-        const base44 = createClientFromRequest(req);
+        // Initialize Base44 client with service role (no user auth needed for public signup)
+        const base44 = new Base44Client({
+            appId: Deno.env.get('BASE44_APP_ID'),
+            serviceRoleKey: Deno.env.get('BASE44_SERVICE_ROLE_KEY')
+        });
 
         // Check if merchant already exists
-        const existingMerchants = await base44.asServiceRole.entities.Merchant.filter({ 
+        const existingMerchants = await base44.entities.Merchant.filter({ 
             owner_email: owner_email.toLowerCase().trim() 
         });
         
@@ -37,7 +41,7 @@ Deno.serve(async (req) => {
         }
 
         // Create merchant
-        const merchant = await base44.asServiceRole.entities.Merchant.create({
+        const merchant = await base44.entities.Merchant.create({
             business_name: business_name.trim(),
             display_name: business_name.trim(),
             owner_name: owner_name.trim(),
@@ -61,6 +65,7 @@ Deno.serve(async (req) => {
 
         // Send confirmation email using SMTP
         try {
+            console.log('Attempting to send email...');
             const transporter = nodemailer.createTransport({
                 host: Deno.env.get('SMTP_HOST'),
                 port: parseInt(Deno.env.get('SMTP_PORT') || '587'),
@@ -91,8 +96,10 @@ Deno.serve(async (req) => {
                 `,
                 text: `Welcome to ChainLINK POS, ${owner_name}!\n\nYour merchant registration has been received successfully.\n\nWhat's Next?\nOur team will review your application and activate your account within 24 hours.\nYou will receive an email with your login credentials once your account is ready.\n\nYour Registration Details:\nBusiness Name: ${business_name}\nEmail: ${owner_email.toLowerCase().trim()}\n\nThank you for choosing ChainLINK POS!`
             });
+            
+            console.log('Email sent successfully');
         } catch (emailError) {
-            console.warn('Failed to send confirmation email:', emailError);
+            console.error('Failed to send confirmation email:', emailError);
             // Don't fail the registration if email fails
         }
 
