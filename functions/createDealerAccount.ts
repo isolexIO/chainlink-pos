@@ -1,5 +1,4 @@
-
-import { createClientFromRequest } from 'npm:@base44/sdk@0.7.1';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 import bcrypt from 'npm:bcryptjs@2.4.3';
 
 Deno.serve(async (req) => {
@@ -183,26 +182,6 @@ Deno.serve(async (req) => {
             console.log('Welcome email sent');
         } catch (emailError) {
             console.error('Failed to send welcome email:', emailError);
-        }
-
-        // Create audit log
-        try {
-            await base44.functions.invoke('createAuditLog', {
-                action_type: 'user_created',
-                severity: 'info',
-                actor_id: user.id,
-                actor_email: user.email,
-                actor_role: 'dealer_admin',
-                description: `New dealer account created: ${dealer_name}`,
-                metadata: {
-                    dealer_name,
-                    dealer_slug: slug,
-                    owner_name
-                },
-                pci_relevant: false
-            });
-        } catch (auditError) {
-            console.error('Failed to create audit log:', auditError);
         }
 
         console.log('Dealer registration completed successfully');

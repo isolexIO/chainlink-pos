@@ -1,145 +1,128 @@
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Building2, CheckCircle, ArrowRight } from 'lucide-react';
+import { Building2, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
-export default function DealerOnboardingPage() {
-  const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+export default function DealerOnboarding() {
   const [formData, setFormData] = useState({
-    name: '',
-    slug: '',
+    dealer_name: '',
     owner_name: '',
     owner_email: '',
-    contact_email: '',
     contact_phone: '',
-    primary_color: '#7B2FD6',
-    secondary_color: '#0FD17A',
-    billing_mode: 'root_fallback',
-    commission_percent: 20
+    slug: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [credentials, setCredentials] = useState(null);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadCurrentUser();
-  }, []);
-
-  const loadCurrentUser = async () => {
-    try {
-      const user = await base44.auth.me();
-      setCurrentUser(user);
-      
-      // Pre-fill form with user info
-      setFormData(prev => ({
-        ...prev,
-        owner_name: user.full_name || '',
-        owner_email: user.email || '',
-        contact_email: user.email || ''
-      }));
-    } catch (error) {
-      console.error('Error loading user:', error);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-
-    // Auto-generate slug from name
-    if (name === 'name') {
-      const slug = value.toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-      setFormData(prev => ({
-        ...prev,
-        slug
-      }));
-    }
+  const handleSlugChange = (value) => {
+    const sanitized = value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
+    setFormData({ ...formData, slug: sanitized });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
+
+    if (formData.slug.length < 3) {
+      setError('Slug must be at least 3 characters long');
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Create dealer
-      const dealer = await base44.entities.Dealer.create({
-        ...formData,
-        status: 'trial',
-        trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-        total_merchants: 0,
-        total_revenue_generated: 0,
-        commission_earned: 0,
-        commission_paid_out: 0,
-        commission_pending: 0
-      });
+      const response = await base44.functions.invoke('createDealerAccount', formData);
 
-      // Update user to be dealer_admin
-      if (currentUser && !currentUser.dealer_id) {
-        await base44.entities.User.update(currentUser.id, {
-          dealer_id: dealer.id,
-          role: currentUser.role === 'root_admin' ? 'root_admin' : 'dealer_admin',
-          can_view_all_merchants: true
+      if (response.success) {
+        setCredentials({
+          pin: response.credentials.pin,
+          email: response.user.email,
+          temp_password: response.credentials.temp_password,
+          slug: response.dealer.slug
         });
+        setSuccess(true);
+      } else {
+        setError(response.error || 'Failed to create dealer account');
       }
-
-      setStep(3); // Success step
-    } catch (error) {
-      console.error('Error creating dealer:', error);
-      alert('Error creating dealer account: ' + error.message);
+    } catch (err) {
+      console.error('Dealer signup error:', err);
+      setError(err.message || 'Failed to create dealer account. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (step === 3) {
+  if (success && credentials) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-        <Card className="max-w-2xl w-full">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-10 h-10 text-green-600" />
+            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
             </div>
-            <CardTitle className="text-3xl">Welcome to ChainLINK!</CardTitle>
-            <CardDescription className="text-lg mt-2">
-              Your dealer account has been created successfully
-            </CardDescription>
+            <CardTitle className="text-2xl dark:text-white">Dealer Account Created!</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg">
-              <h3 className="font-semibold text-lg mb-2">What's Next?</h3>
-              <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <span>Set up your Stripe Connect account to receive payouts</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <span>Configure your custom domain and branding</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                  <span>Invite your first merchant to get started</span>
-                </li>
-              </ul>
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-6">
+              <h3 className="font-semibold text-lg mb-4 dark:text-white">Your Login Credentials</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-gray-600 dark:text-gray-300">Email</Label>
+                  <div className="font-mono bg-white dark:bg-gray-700 p-3 rounded border dark:border-gray-600 dark:text-white">
+                    {credentials.email}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-gray-600 dark:text-gray-300">6-Digit PIN</Label>
+                  <div className="font-mono text-2xl font-bold bg-white dark:bg-gray-700 p-3 rounded border dark:border-gray-600 dark:text-white">
+                    {credentials.pin}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-gray-600 dark:text-gray-300">Temporary Password</Label>
+                  <div className="font-mono bg-white dark:bg-gray-700 p-3 rounded border dark:border-gray-600 dark:text-white break-all">
+                    {credentials.temp_password}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-gray-600 dark:text-gray-300">Your Dealer URL</Label>
+                  <div className="font-mono bg-white dark:bg-gray-700 p-3 rounded border dark:border-gray-600 dark:text-white">
+                    https://{credentials.slug}.chainlinkpos.isolex.io
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex gap-4">
-              <Button
-                onClick={() => window.location.href = createPageUrl('DealerDashboard')}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-              >
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+            <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                <strong>Important:</strong> Check your email for detailed setup instructions. These credentials have also been sent to your email address.
+              </p>
             </div>
+
+            <div className="space-y-3">
+              <h4 className="font-semibold dark:text-white">Next Steps:</h4>
+              <ol className="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
+                <li>Log in to your dealer dashboard</li>
+                <li>Configure your white-label branding</li>
+                <li>Set up Stripe Connect for commission payouts</li>
+                <li>Customize your dealer landing page</li>
+                <li>Start inviting merchants to your platform!</li>
+              </ol>
+            </div>
+
+            <Button 
+              className="w-full" 
+              size="lg"
+              onClick={() => window.location.href = createPageUrl('PinLogin')}
+            >
+              Go to Login
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -147,189 +130,123 @@ export default function DealerOnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <Card className="max-w-2xl w-full">
-        <CardHeader>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Building2 className="w-7 h-7 text-blue-600" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl">Become a ChainLINK Dealer</CardTitle>
-              <CardDescription>
-                Start your white-label POS business in minutes
-                {currentUser?.role === 'root_admin' && (
-                  <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                    Root Admin Mode
-                  </span>
-                )}
-              </CardDescription>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      <Card className="w-full max-w-2xl dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader className="text-center">
+          <div className="mx-auto w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mb-4">
+            <Building2 className="w-10 h-10 text-purple-600 dark:text-purple-400" />
           </div>
+          <CardTitle className="text-2xl dark:text-white">Become a ChainLINK Dealer</CardTitle>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
+            White-label POS platform with commission-based revenue
+          </p>
         </CardHeader>
-
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Business Info */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Business Information</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Business Name *</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="ACME POS Solutions"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="slug">URL Slug *</Label>
-                  <Input
-                    id="slug"
-                    name="slug"
-                    value={formData.slug}
-                    onChange={handleInputChange}
-                    placeholder="acme-pos"
-                    required
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Used for your custom subdomain
-                  </p>
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4 flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
               </div>
+            )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="owner_name">Owner Name *</Label>
-                  <Input
-                    id="owner_name"
-                    name="owner_name"
-                    value={formData.owner_name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="owner_email">Owner Email *</Label>
-                  <Input
-                    id="owner_email"
-                    name="owner_email"
-                    type="email"
-                    value={formData.owner_email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="contact_email">Support Email *</Label>
-                  <Input
-                    id="contact_email"
-                    name="contact_email"
-                    type="email"
-                    value={formData.contact_email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="contact_phone">Support Phone</Label>
-                  <Input
-                    id="contact_phone"
-                    name="contact_phone"
-                    type="tel"
-                    value={formData.contact_phone}
-                    onChange={handleInputChange}
-                    placeholder="+1 (555) 123-4567"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Branding */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Branding</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="primary_color">Primary Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="primary_color"
-                      name="primary_color"
-                      type="color"
-                      value={formData.primary_color}
-                      onChange={handleInputChange}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.primary_color}
-                      onChange={(e) => setFormData(prev => ({...prev, primary_color: e.target.value}))}
-                      placeholder="#7B2FD6"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="secondary_color">Secondary Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="secondary_color"
-                      name="secondary_color"
-                      type="color"
-                      value={formData.secondary_color}
-                      onChange={handleInputChange}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      value={formData.secondary_color}
-                      onChange={(e) => setFormData(prev => ({...prev, secondary_color: e.target.value}))}
-                      placeholder="#0FD17A"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Commission */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Revenue Share</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="commission_percent">Commission Percentage *</Label>
+                <Label htmlFor="dealer_name" className="dark:text-gray-200">Dealer/Company Name *</Label>
                 <Input
-                  id="commission_percent"
-                  name="commission_percent"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={formData.commission_percent}
-                  onChange={handleInputChange}
+                  id="dealer_name"
+                  value={formData.dealer_name}
+                  onChange={(e) => setFormData({ ...formData, dealer_name: e.target.value })}
+                  placeholder="Your Company Name"
                   required
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Percentage of merchant fees you'll earn
+              </div>
+              <div>
+                <Label htmlFor="owner_name" className="dark:text-gray-200">Your Name *</Label>
+                <Input
+                  id="owner_name"
+                  value={formData.owner_name}
+                  onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
+                  placeholder="John Doe"
+                  required
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="owner_email" className="dark:text-gray-200">Email Address *</Label>
+              <Input
+                id="owner_email"
+                type="email"
+                value={formData.owner_email}
+                onChange={(e) => setFormData({ ...formData, owner_email: e.target.value })}
+                placeholder="your@email.com"
+                required
+                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="contact_phone" className="dark:text-gray-200">Phone Number</Label>
+              <Input
+                id="contact_phone"
+                type="tel"
+                value={formData.contact_phone}
+                onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                placeholder="(555) 123-4567"
+                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="slug" className="dark:text-gray-200">Dealer Slug (URL) *</Label>
+              <div className="relative">
+                <Input
+                  id="slug"
+                  value={formData.slug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  placeholder="yourcompany"
+                  required
+                  pattern="[a-z0-9-]{3,30}"
+                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Your URL: https://{formData.slug || 'yourcompany'}.chainlinkpos.isolex.io
                 </p>
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700"
-              disabled={loading}
-            >
-              {loading ? 'Creating Account...' : 'Create Dealer Account'}
-              <ArrowRight className="w-4 h-4 ml-2" />
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-sm text-gray-600 dark:text-gray-300">
+              <p className="font-semibold mb-2 dark:text-white">Dealer Benefits:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>20% commission on all merchant transactions</li>
+                <li>White-label branding with your logo and colors</li>
+                <li>Custom domain support</li>
+                <li>Stripe Connect automated payouts</li>
+                <li>Merchant management dashboard</li>
+                <li>30-day free trial</li>
+              </ul>
+            </div>
+
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating Dealer Account...
+                </>
+              ) : (
+                'Create Dealer Account'
+              )}
             </Button>
+
+            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+              Already a dealer?{' '}
+              <a href={createPageUrl('PinLogin')} className="text-purple-600 dark:text-purple-400 hover:underline">
+                Sign in
+              </a>
+            </p>
           </form>
         </CardContent>
       </Card>

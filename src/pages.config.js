@@ -32,7 +32,7 @@ import DealerDashboard from './pages/DealerDashboard';
 import RootAdmin from './pages/RootAdmin';
 import DealerLanding from './pages/DealerLanding';
 import LoyaltyProgram from './pages/LoyaltyProgram';
-import Layout from './Layout.jsx';
+import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
@@ -75,5 +75,5 @@ export const PAGES = {
 export const pagesConfig = {
     mainPage: "Home",
     Pages: PAGES,
-    Layout: Layout,
+    Layout: __Layout,
 };
