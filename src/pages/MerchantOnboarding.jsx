@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Store, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Store, CheckCircle, Loader2, AlertCircle, Sparkles, TrendingUp, Users, BarChart3, Shield } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
 export default function MerchantOnboarding() {
@@ -53,62 +53,88 @@ export default function MerchantOnboarding() {
 
   if (success && credentials) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl dark:bg-gray-800 dark:border-gray-700">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full mix-blend-overlay filter blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-300 rounded-full mix-blend-overlay filter blur-3xl animate-pulse delay-700"></div>
+        </div>
+
+        <Card className="w-full max-w-2xl shadow-2xl relative z-10">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mb-4 animate-bounce">
+              <CheckCircle className="w-12 h-12 text-white" />
             </div>
-            <CardTitle className="text-2xl dark:text-white">Account Created Successfully!</CardTitle>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">
+              Welcome to ChainLINK POS!
+            </CardTitle>
+            <p className="text-gray-600 mt-2">Your account is ready to go 🚀</p>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-4 dark:text-white">Your Login Credentials</h3>
-              <div className="space-y-3">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 shadow-inner">
+              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-blue-600" />
+                Your Login Credentials
+              </h3>
+              <div className="space-y-4">
                 <div>
-                  <Label className="text-gray-600 dark:text-gray-300">Email</Label>
-                  <div className="font-mono bg-white dark:bg-gray-700 p-3 rounded border dark:border-gray-600 dark:text-white">
+                  <Label className="text-gray-600 text-xs font-medium">Email Address</Label>
+                  <div className="font-mono bg-white p-3 rounded-lg border border-blue-200 shadow-sm mt-1">
                     {credentials.email}
                   </div>
                 </div>
                 <div>
-                  <Label className="text-gray-600 dark:text-gray-300">6-Digit PIN (for quick login)</Label>
-                  <div className="font-mono text-2xl font-bold bg-white dark:bg-gray-700 p-3 rounded border dark:border-gray-600 dark:text-white">
+                  <Label className="text-gray-600 text-xs font-medium">6-Digit PIN (Quick Login)</Label>
+                  <div className="font-mono text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent p-4 rounded-lg bg-white border-2 border-blue-300 shadow-sm mt-1 text-center">
                     {credentials.pin}
                   </div>
                 </div>
                 <div>
-                  <Label className="text-gray-600 dark:text-gray-300">Temporary Password</Label>
-                  <div className="font-mono bg-white dark:bg-gray-700 p-3 rounded border dark:border-gray-600 dark:text-white break-all">
+                  <Label className="text-gray-600 text-xs font-medium">Temporary Password</Label>
+                  <div className="font-mono text-sm bg-white p-3 rounded-lg border border-blue-200 shadow-sm mt-1 break-all">
                     {credentials.temp_password}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                <strong>Important:</strong> Save these credentials securely! You can use either your PIN for quick access or email/password for full account access.
+            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-4 shadow-sm">
+              <p className="text-sm text-yellow-900 flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <span><strong>Important:</strong> Save these credentials securely! You'll receive a confirmation email shortly.</span>
               </p>
             </div>
 
-            <div className="space-y-3">
-              <h4 className="font-semibold dark:text-white">Next Steps:</h4>
-              <ol className="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
-                <li>Log in using your PIN or email credentials</li>
-                <li>Complete your business profile</li>
-                <li>Add your products and inventory</li>
-                <li>Configure payment methods</li>
-                <li>Start processing orders!</li>
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                What's Next?
+              </h4>
+              <ol className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <span>Log in using your PIN or email credentials</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <span>Set up your products and pricing</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <span>Configure your payment methods</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                  <span>Start processing orders!</span>
+                </li>
               </ol>
             </div>
 
             <Button 
-              className="w-full" 
-              size="lg"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg h-14 shadow-lg" 
               onClick={() => window.location.href = createPageUrl('PinLogin')}
             >
-              Go to Login
+              Start Your Free Trial →
             </Button>
           </CardContent>
         </Card>
@@ -117,131 +143,160 @@ export default function MerchantOnboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl dark:bg-gray-800 dark:border-gray-700">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4">
-            <Store className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-white rounded-full mix-blend-overlay filter blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-72 h-72 bg-blue-300 rounded-full mix-blend-overlay filter blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 w-72 h-72 bg-purple-300 rounded-full mix-blend-overlay filter blur-3xl animate-pulse delay-500"></div>
+      </div>
+
+      <Card className="w-full max-w-4xl shadow-2xl relative z-10">
+        <CardHeader className="text-center pb-6 bg-gradient-to-br from-blue-50 to-purple-50">
+          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg transform hover:scale-110 transition-transform">
+            <Store className="w-11 h-11 text-white" />
           </div>
-          <CardTitle className="text-2xl dark:text-white">Create Your Merchant Account</CardTitle>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">
-            Start your 30-day free trial today
+          <CardTitle className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Start Your POS Journey
+          </CardTitle>
+          <p className="text-gray-600 mt-3 text-lg">
+            Join thousands of merchants. Start your <strong>30-day free trial</strong> today!
           </p>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start gap-3 animate-shake">
+                <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-red-800 dark:text-red-200 text-sm font-medium">Error creating account</p>
-                  <p className="text-red-700 dark:text-red-300 text-sm mt-1">{error}</p>
+                  <p className="text-red-900 text-sm font-semibold">Unable to create account</p>
+                  <p className="text-red-700 text-sm mt-1">{error}</p>
                 </div>
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <Label htmlFor="business_name" className="dark:text-gray-200">Business Name *</Label>
+                <Label htmlFor="business_name" className="text-gray-700 font-medium">Business Name *</Label>
                 <Input
                   id="business_name"
                   value={formData.business_name}
                   onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
-                  placeholder="Your Business Name"
+                  placeholder="Acme Coffee Shop"
                   required
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="mt-1.5 h-12 border-2 focus:border-blue-500"
                 />
               </div>
               <div>
-                <Label htmlFor="owner_name" className="dark:text-gray-200">Your Name *</Label>
+                <Label htmlFor="owner_name" className="text-gray-700 font-medium">Your Name *</Label>
                 <Input
                   id="owner_name"
                   value={formData.owner_name}
                   onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
                   placeholder="John Doe"
                   required
-                  className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="mt-1.5 h-12 border-2 focus:border-blue-500"
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="owner_email" className="dark:text-gray-200">Email Address *</Label>
+              <Label htmlFor="owner_email" className="text-gray-700 font-medium">Email Address *</Label>
               <Input
                 id="owner_email"
                 type="email"
                 value={formData.owner_email}
                 onChange={(e) => setFormData({ ...formData, owner_email: e.target.value })}
-                placeholder="your@email.com"
+                placeholder="you@business.com"
                 required
-                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="mt-1.5 h-12 border-2 focus:border-blue-500"
               />
             </div>
 
-            <div>
-              <Label htmlFor="phone" className="dark:text-gray-200">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="(555) 123-4567"
-                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <Label htmlFor="phone" className="text-gray-700 font-medium">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="(555) 123-4567"
+                  className="mt-1.5 h-12 border-2 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <Label htmlFor="address" className="text-gray-700 font-medium">Business Address</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="123 Main St, City, State"
+                  className="mt-1.5 h-12 border-2 focus:border-blue-500"
+                />
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="address" className="dark:text-gray-200">Business Address</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="123 Main St, City, State, ZIP"
-                className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
-            </div>
-
-            <div className="flex items-center space-x-2">
+            <div className="flex items-start space-x-3 bg-purple-50 p-4 rounded-xl border border-purple-200">
               <Checkbox
                 id="setup_demo_data"
                 checked={formData.setup_demo_data}
                 onCheckedChange={(checked) => setFormData({ ...formData, setup_demo_data: checked })}
+                className="mt-1"
               />
-              <label
-                htmlFor="setup_demo_data"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200"
-              >
-                Set up demo products and sample data to get started quickly
+              <label htmlFor="setup_demo_data" className="text-sm font-medium leading-relaxed cursor-pointer">
+                <span className="text-purple-900">Set up demo products</span>
+                <p className="text-purple-700 font-normal mt-1">Get started quickly with sample menu items and products</p>
               </label>
             </div>
 
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-sm text-gray-600 dark:text-gray-300">
-              <p className="font-semibold mb-2 dark:text-white">What you'll get:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>30-day free trial - no credit card required</li>
-                <li>Full access to all POS features</li>
-                <li>Multi-location support</li>
-                <li>Inventory management</li>
-                <li>Customer loyalty programs</li>
-                <li>Detailed analytics and reports</li>
-              </ul>
+            <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-6 border border-gray-200">
+              <p className="font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-blue-600" />
+                Everything You Need to Succeed
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-green-600" />
+                  <span>Real-time sales analytics</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span>Customer loyalty programs</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-purple-600" />
+                  <span>Advanced reporting</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-indigo-600" />
+                  <span>Multi-location support</span>
+                </div>
+              </div>
             </div>
 
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all" 
+              disabled={loading}
+            >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating Account...
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Creating Your Account...
                 </>
               ) : (
-                'Create Account'
+                <>
+                  Create Free Account
+                  <Sparkles className="w-5 h-5 ml-2" />
+                </>
               )}
             </Button>
 
-            <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-center text-sm text-gray-600">
               Already have an account?{' '}
-              <a href={createPageUrl('PinLogin')} className="text-blue-600 dark:text-blue-400 hover:underline">
-                Sign in
+              <a href={createPageUrl('PinLogin')} className="text-blue-600 hover:text-blue-700 font-semibold hover:underline">
+                Sign in here
               </a>
             </p>
           </form>
