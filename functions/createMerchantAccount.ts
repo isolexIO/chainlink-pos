@@ -1,5 +1,4 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-import bcrypt from 'npm:bcryptjs@2.4.3';
 
 Deno.serve(async (req) => {
     try {
@@ -28,31 +27,22 @@ Deno.serve(async (req) => {
 
         const base44 = createClientFromRequest(req);
 
-        // Check if user already exists
-        console.log('Checking for existing user:', owner_email);
+        // Check if merchant already exists with this email
+        console.log('Checking for existing merchant:', owner_email);
         try {
-            const existingUsers = await base44.asServiceRole.entities.User.filter({ 
-                email: owner_email.toLowerCase().trim() 
+            const existingMerchants = await base44.asServiceRole.entities.Merchant.filter({ 
+                owner_email: owner_email.toLowerCase().trim() 
             });
-            if (existingUsers && existingUsers.length > 0) {
-                console.error('User already exists');
+            if (existingMerchants && existingMerchants.length > 0) {
+                console.error('Merchant already exists');
                 return Response.json({
                     success: false,
-                    error: 'An account with this email already exists'
+                    error: 'A merchant account with this email already exists'
                 }, { status: 400 });
             }
-        } catch (userCheckError) {
-            console.error('Error checking existing users:', userCheckError);
+        } catch (merchantCheckError) {
+            console.error('Error checking existing merchants:', merchantCheckError);
         }
-
-        // Generate a random 6-digit PIN
-        const pin = Math.floor(100000 + Math.random() * 900000).toString();
-        console.log('Generated PIN');
-
-        // Generate a temporary password
-        const tempPassword = Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12).toUpperCase();
-        const passwordHash = await bcrypt.hash(tempPassword, 10);
-        console.log('Generated password hash');
 
         // Create merchant
         const merchantData = {
@@ -101,40 +91,6 @@ Deno.serve(async (req) => {
         const merchant = await base44.asServiceRole.entities.Merchant.create(merchantData);
         console.log('Merchant created:', merchant.id);
 
-        // Create owner user account
-        const userData = {
-            full_name: owner_name.trim(),
-            email: owner_email.toLowerCase().trim(),
-            role: 'admin',
-            merchant_id: merchant.id,
-            dealer_id: dealer_id || null,
-            pin: pin,
-            password_hash: passwordHash,
-            employee_id: `EMP-${Date.now()}`,
-            is_active: true,
-            currently_clocked_in: false,
-            total_sales: 0,
-            total_orders: 0,
-            total_hours_worked: 0,
-            permissions: [
-                'process_orders',
-                'manage_products',
-                'manage_customers',
-                'view_reports',
-                'manage_settings',
-                'manage_users',
-                'submit_tickets',
-                'manage_inventory',
-                'issue_refunds',
-                'manage_discounts',
-                'close_register'
-            ]
-        };
-
-        console.log('Creating user...');
-        const user = await base44.asServiceRole.entities.User.create(userData);
-        console.log('User created:', user.id);
-
         // Set up demo data if requested
         if (setup_demo_data) {
             console.log('Setting up demo menu...');
@@ -148,32 +104,36 @@ Deno.serve(async (req) => {
             }
         }
 
-        // Send welcome email
+        // Send notification email
         try {
-            console.log('Sending welcome email...');
+            console.log('Sending notification email...');
             await base44.integrations.Core.SendEmail({
                 to: owner_email.toLowerCase().trim(),
-                subject: 'Welcome to ChainLINK POS!',
+                subject: 'Welcome to ChainLINK POS - Account Pending Setup',
                 body: `
                     <h2>Welcome to ChainLINK POS, ${owner_name}!</h2>
-                    <p>Your merchant account has been created successfully.</p>
+                    <p>Your merchant account request has been received successfully.</p>
                     
-                    <h3>Your Login Credentials:</h3>
+                    <h3>What's Next?</h3>
+                    <p>Our team will review your application and set up your account within 24 hours.</p>
+                    <p>You will receive an email with your login credentials once your account is activated.</p>
+                    
+                    <h3>Your Application Details:</h3>
+                    <p><strong>Business Name:</strong> ${business_name}</p>
                     <p><strong>Email:</strong> ${owner_email.toLowerCase().trim()}</p>
-                    <p><strong>PIN:</strong> ${pin}</p>
-                    <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+                    <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
                     
-                    <p>You can login using either your 6-digit PIN for quick access, or your email and password.</p>
+                    <p>If you have any questions, please don't hesitate to contact our support team.</p>
                     
-                    <p>Your 30-day free trial has started!</p>
+                    <p>Thank you for choosing ChainLINK POS!</p>
                 `
             });
-            console.log('Welcome email sent');
+            console.log('Notification email sent');
         } catch (emailError) {
-            console.error('Failed to send welcome email (non-fatal):', emailError.message);
+            console.error('Failed to send notification email (non-fatal):', emailError.message);
         }
 
-        console.log('Merchant account created successfully');
+        console.log('Merchant registration completed successfully');
 
         return Response.json({
             success: true,
@@ -181,13 +141,7 @@ Deno.serve(async (req) => {
                 id: merchant.id,
                 business_name: merchant.business_name
             },
-            user: {
-                id: user.id,
-                email: user.email,
-                full_name: user.full_name
-            },
-            pin: pin,
-            temp_password: tempPassword
+            message: 'Registration received. Admin will activate your account within 24 hours.'
         });
 
     } catch (error) {

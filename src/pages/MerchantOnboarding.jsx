@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Store, CheckCircle, Loader2, AlertCircle, Sparkles, TrendingUp, Users, BarChart3, Shield } from 'lucide-react';
+import { Store, CheckCircle, Loader2, AlertCircle, Sparkles, TrendingUp, Users, BarChart3, Shield, Clock } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
 export default function MerchantOnboarding() {
@@ -19,7 +19,6 @@ export default function MerchantOnboarding() {
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [credentials, setCredentials] = useState(null);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -33,25 +32,20 @@ export default function MerchantOnboarding() {
       console.log('Response received:', response);
 
       if (response.success) {
-        setCredentials({
-          pin: response.pin,
-          email: response.user.email,
-          temp_password: response.temp_password
-        });
         setSuccess(true);
       } else {
-        setError(response.error || 'Failed to create merchant account');
+        setError(response.error || 'Failed to submit registration');
       }
     } catch (err) {
       console.error('Merchant signup error:', err);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to create merchant account. Please try again.';
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to submit registration. Please try again.';
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  if (success && credentials) {
+  if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center p-4 relative overflow-hidden">
         {/* Animated background */}
@@ -66,33 +60,36 @@ export default function MerchantOnboarding() {
               <CheckCircle className="w-12 h-12 text-white" />
             </div>
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">
-              Welcome to ChainLINK POS!
+              Registration Received!
             </CardTitle>
-            <p className="text-gray-600 mt-2">Your account is ready to go 🚀</p>
+            <p className="text-gray-600 mt-2">We'll set up your account shortly</p>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6 shadow-inner">
               <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-blue-600" />
-                Your Login Credentials
+                <Clock className="w-5 h-5 text-blue-600" />
+                What Happens Next?
               </h3>
               <div className="space-y-4">
-                <div>
-                  <Label className="text-gray-600 text-xs font-medium">Email Address</Label>
-                  <div className="font-mono bg-white p-3 rounded-lg border border-blue-200 shadow-sm mt-1">
-                    {credentials.email}
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</div>
+                  <div>
+                    <p className="font-medium text-gray-900">Account Review</p>
+                    <p className="text-sm text-gray-600">Our team will review your application within 24 hours</p>
                   </div>
                 </div>
-                <div>
-                  <Label className="text-gray-600 text-xs font-medium">6-Digit PIN (Quick Login)</Label>
-                  <div className="font-mono text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent p-4 rounded-lg bg-white border-2 border-blue-300 shadow-sm mt-1 text-center">
-                    {credentials.pin}
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
+                  <div>
+                    <p className="font-medium text-gray-900">Account Activation</p>
+                    <p className="text-sm text-gray-600">We'll create your admin account and send you login credentials via email</p>
                   </div>
                 </div>
-                <div>
-                  <Label className="text-gray-600 text-xs font-medium">Temporary Password</Label>
-                  <div className="font-mono text-sm bg-white p-3 rounded-lg border border-blue-200 shadow-sm mt-1 break-all">
-                    {credentials.temp_password}
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
+                  <div>
+                    <p className="font-medium text-gray-900">Start Your Free Trial</p>
+                    <p className="text-sm text-gray-600">Log in and begin your 30-day free trial immediately</p>
                   </div>
                 </div>
               </div>
@@ -101,40 +98,21 @@ export default function MerchantOnboarding() {
             <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-xl p-4 shadow-sm">
               <p className="text-sm text-yellow-900 flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                <span><strong>Important:</strong> Save these credentials securely! You'll receive a confirmation email shortly.</span>
+                <span><strong>Check your inbox:</strong> We've sent a confirmation email to <strong>{formData.owner_email}</strong></span>
               </p>
             </div>
 
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
-                What's Next?
-              </h4>
-              <ol className="space-y-2 text-sm text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
-                  <span>Log in using your PIN or email credentials</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
-                  <span>Set up your products and pricing</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
-                  <span>Configure your payment methods</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">4</span>
-                  <span>Start processing orders!</span>
-                </li>
-              </ol>
+              <p className="text-sm text-gray-700 mb-3">
+                <strong>Questions?</strong> Contact our support team at support@chainlinkpos.com
+              </p>
             </div>
 
             <Button 
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg h-14 shadow-lg" 
-              onClick={() => window.location.href = createPageUrl('PinLogin')}
+              onClick={() => window.location.href = createPageUrl('Home')}
             >
-              Start Your Free Trial →
+              Return to Home
             </Button>
           </CardContent>
         </Card>
@@ -169,7 +147,7 @@ export default function MerchantOnboarding() {
               <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start gap-3 animate-shake">
                 <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-red-900 text-sm font-semibold">Unable to create account</p>
+                  <p className="text-red-900 text-sm font-semibold">Unable to submit registration</p>
                   <p className="text-red-700 text-sm mt-1">{error}</p>
                 </div>
               </div>
@@ -283,11 +261,11 @@ export default function MerchantOnboarding() {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Creating Your Account...
+                  Submitting Registration...
                 </>
               ) : (
                 <>
-                  Create Free Account
+                  Submit Registration
                   <Sparkles className="w-5 h-5 ml-2" />
                 </>
               )}
