@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import nodemailer from 'npm:nodemailer@6.9.7';
 
 Deno.serve(async (req) => {
     try {
@@ -58,9 +59,20 @@ Deno.serve(async (req) => {
             }
         });
 
-        // Send confirmation email using custom SMTP
+        // Send confirmation email using SMTP
         try {
-            await base44.functions.invoke('sendEmail', {
+            const transporter = nodemailer.createTransport({
+                host: Deno.env.get('SMTP_HOST'),
+                port: parseInt(Deno.env.get('SMTP_PORT') || '587'),
+                secure: Deno.env.get('SMTP_PORT') === '465',
+                auth: {
+                    user: Deno.env.get('SMTP_USER'),
+                    pass: Deno.env.get('SMTP_PASSWORD')
+                }
+            });
+
+            await transporter.sendMail({
+                from: `"${Deno.env.get('SMTP_FROM_NAME')}" <${Deno.env.get('SMTP_FROM_EMAIL')}>`,
                 to: owner_email.toLowerCase().trim(),
                 subject: 'Welcome to ChainLINK POS - Registration Received',
                 html: `
