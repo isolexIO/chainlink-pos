@@ -58,25 +58,31 @@ Deno.serve(async (req) => {
             }
         });
 
-        // Send confirmation email
-        await base44.integrations.Core.SendEmail({
-            to: owner_email.toLowerCase().trim(),
-            subject: 'Welcome to ChainLINK POS - Registration Received',
-            body: `
-                <h2>Welcome to ChainLINK POS, ${owner_name}!</h2>
-                <p>Your merchant registration has been received successfully.</p>
-                
-                <h3>What's Next?</h3>
-                <p>Our team will review your application and activate your account within 24 hours.</p>
-                <p>You will receive an email with your login credentials once your account is ready.</p>
-                
-                <h3>Your Registration Details:</h3>
-                <p><strong>Business Name:</strong> ${business_name}</p>
-                <p><strong>Email:</strong> ${owner_email.toLowerCase().trim()}</p>
-                
-                <p>Thank you for choosing ChainLINK POS!</p>
-            `
-        });
+        // Send confirmation email using custom SMTP
+        try {
+            await base44.functions.invoke('sendEmail', {
+                to: owner_email.toLowerCase().trim(),
+                subject: 'Welcome to ChainLINK POS - Registration Received',
+                html: `
+                    <h2>Welcome to ChainLINK POS, ${owner_name}!</h2>
+                    <p>Your merchant registration has been received successfully.</p>
+                    
+                    <h3>What's Next?</h3>
+                    <p>Our team will review your application and activate your account within 24 hours.</p>
+                    <p>You will receive an email with your login credentials once your account is ready.</p>
+                    
+                    <h3>Your Registration Details:</h3>
+                    <p><strong>Business Name:</strong> ${business_name}</p>
+                    <p><strong>Email:</strong> ${owner_email.toLowerCase().trim()}</p>
+                    
+                    <p>Thank you for choosing ChainLINK POS!</p>
+                `,
+                text: `Welcome to ChainLINK POS, ${owner_name}!\n\nYour merchant registration has been received successfully.\n\nWhat's Next?\nOur team will review your application and activate your account within 24 hours.\nYou will receive an email with your login credentials once your account is ready.\n\nYour Registration Details:\nBusiness Name: ${business_name}\nEmail: ${owner_email.toLowerCase().trim()}\n\nThank you for choosing ChainLINK POS!`
+            });
+        } catch (emailError) {
+            console.warn('Failed to send confirmation email:', emailError);
+            // Don't fail the registration if email fails
+        }
 
         return Response.json({
             success: true,

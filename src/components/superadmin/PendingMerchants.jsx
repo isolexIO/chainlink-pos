@@ -26,7 +26,6 @@ export default function PendingMerchants() {
     queryKey: ['pending-merchants'],
     queryFn: async () => {
       const allMerchants = await base44.entities.Merchant.list();
-      // Get all users to check which merchants don't have admin users yet
       const allUsers = await base44.entities.User.list();
       const merchantIdsWithUsers = new Set(allUsers.map(u => u.merchant_id).filter(Boolean));
       
@@ -49,11 +48,11 @@ export default function PendingMerchants() {
 
     setInviting(true);
     try {
-      // Send activation email with credentials
-      await base44.integrations.Core.SendEmail({
+      // Send activation email using custom SMTP
+      await base44.functions.invoke('sendEmail', {
         to: selectedMerchant.owner_email,
         subject: 'ChainLINK POS - Your Account is Ready!',
-        body: `
+        html: `
           <h2>Great news, ${selectedMerchant.owner_name}!</h2>
           <p>Your ChainLINK POS account has been activated and is ready to use.</p>
           
@@ -66,7 +65,8 @@ export default function PendingMerchants() {
           <p>Your 30-day free trial has started!</p>
           
           <p><a href="${window.location.origin}">Click here to log in</a></p>
-        `
+        `,
+        text: `Great news, ${selectedMerchant.owner_name}!\n\nYour ChainLINK POS account has been activated and is ready to use.\n\nYour Login Credentials:\nEmail: ${selectedMerchant.owner_email}\nPIN: ${pin}\nTemporary Password: ${tempPassword}\n\nYou can now log in at your POS system using your 6-digit PIN for quick access.\nYour 30-day free trial has started!\n\nClick here to log in: ${window.location.origin}`
       });
 
       // Set up demo data if requested
