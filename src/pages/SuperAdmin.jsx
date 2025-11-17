@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,8 +18,9 @@ import {
   AlertCircle,
   CheckCircle,
   Key,
-  LogOut, // Added LogOut icon
-  Home // Added Home icon
+  LogOut,
+  Home,
+  UserPlus
 } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
@@ -37,6 +37,7 @@ import NotificationManager from '../components/superadmin/NotificationManager';
 import DealerLandingEditor from '../components/superadmin/DealerLandingEditor';
 import DemoMenuManager from '../components/superadmin/DemoMenuManager';
 import DealerManagement from '../components/rootadmin/DealerManagement';
+import PendingMerchants from '../components/superadmin/PendingMerchants';
 
 export default function SuperAdminPage() {
   const [user, setUser] = useState(null);
@@ -77,7 +78,6 @@ export default function SuperAdminPage() {
           currentUser = JSON.parse(pinUserJSON);
         } catch (e) {
           console.error('Error parsing pinLoggedInUser from localStorage:', e);
-          // If parsing fails, treat it as no user in local storage.
           localStorage.removeItem('pinLoggedInUser');
         }
       }
@@ -88,7 +88,6 @@ export default function SuperAdminPage() {
 
       console.log('SuperAdmin user:', currentUser);
 
-      // Check for super_admin, admin, or root_admin roles
       if (!currentUser || (currentUser.role !== 'super_admin' && currentUser.role !== 'admin' && currentUser.role !== 'root_admin')) {
         alert('Access denied. Super admin privileges required.');
         window.location.href = createPageUrl('Home');
@@ -99,7 +98,6 @@ export default function SuperAdminPage() {
     } catch (error) {
       console.error('Error loading user:', error);
       alert('Authentication error. Please log in again.');
-      // Redirect to the PIN login page if authentication fails
       window.location.href = createPageUrl('PinLogin');
     } finally {
       setLoading(false);
@@ -111,7 +109,6 @@ export default function SuperAdminPage() {
       const merchants = await base44.entities.Merchant.list();
       const subscriptions = await base44.entities.Subscription.filter({ status: 'active' });
 
-      // Calculate total revenue from active subscriptions
       const totalRevenue = subscriptions.reduce((sum, sub) => sum + (sub.price || 0), 0);
 
       setStats({
@@ -122,7 +119,6 @@ export default function SuperAdminPage() {
       });
     } catch (error) {
       console.error('Error loading stats:', error);
-      // Keep stats at 0 if error occurs
     }
   };
 
@@ -139,7 +135,7 @@ export default function SuperAdminPage() {
     try {
       const { data } = await base44.functions.invoke('resetAdminPin', {
         email: resetEmail,
-        new_pin: resetPin || undefined // Pass undefined if empty to generate random
+        new_pin: resetPin || undefined
       });
 
       if (data && data.success) {
@@ -196,8 +192,6 @@ export default function SuperAdminPage() {
   const handleLogout = () => {
     if (confirm('Are you sure you want to log out?')) {
       localStorage.removeItem('pinLoggedInUser');
-      
-      // Clear base44 auth session and redirect to home
       base44.auth.logout(createPageUrl('Home'));
     }
   };
@@ -252,7 +246,6 @@ export default function SuperAdminPage() {
         </div>
       </div>
 
-      {/* Main content area below the fixed header */}
       <div className="max-w-7xl mx-auto p-6">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -298,8 +291,12 @@ export default function SuperAdminPage() {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="merchants" className="space-y-6">
-          <TabsList className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-2 w-full">
+        <Tabs defaultValue="pending" className="space-y-6">
+          <TabsList className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-2 w-full">
+            <TabsTrigger value="pending">
+              <UserPlus className="w-4 h-4 mr-2" />
+              Pending
+            </TabsTrigger>
             <TabsTrigger value="merchants">
               <Users className="w-4 h-4 mr-2" />
               Merchants
@@ -337,6 +334,10 @@ export default function SuperAdminPage() {
               Settings
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="pending">
+            <PendingMerchants />
+          </TabsContent>
 
           <TabsContent value="merchants">
             <MerchantManagement />
