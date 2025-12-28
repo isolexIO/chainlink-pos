@@ -470,7 +470,7 @@ export default function SystemMenu() {
 
           <Card
             className="group hover:shadow-2xl transition-all duration-300 cursor-pointer border-2 hover:border-purple-400 dark:bg-gray-800 bg-white"
-            onClick={() => window.open('https://tawk.to/chat/66c9efd2ea492f34bc09af03/1i62d1jbm', '_blank')}
+            onClick={() => window.open('https://071be2.c.myucm.cloud/liveChat/?liveChatAccess=MF83MDA2N2YzNDg5OTQ0OWI0OTdiMzhlMWQyNDhkNTg5Ml8wMDBiODIwNzFiZTImNmI3ODBlYzM4ZThmMWQyYjNiNDcwMTliMWM1OWM2MzA=', '_blank')}
           >
             <CardHeader className="p-6">
               <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
