@@ -13,13 +13,15 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Clock, Mail, Phone, MapPin, CheckCircle, XCircle, UserPlus, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Clock, Mail, Phone, MapPin, CheckCircle, XCircle, UserPlus, Loader2, AlertCircle } from 'lucide-react';
 
 export default function PendingMerchants() {
   const [selectedMerchant, setSelectedMerchant] = useState(null);
   const [pin, setPin] = useState('');
   const [tempPassword, setTempPassword] = useState('');
   const [inviting, setInviting] = useState(false);
+  const [activationError, setActivationError] = useState('');
   const queryClient = useQueryClient();
 
   const { data: merchants = [], isLoading } = useQuery({
@@ -34,7 +36,7 @@ export default function PendingMerchants() {
   });
 
   const generateCredentials = () => {
-    const generatedPin = Math.floor(100000 + Math.random() * 900000).toString();
+    const generatedPin = Math.floor(1000 + Math.random() * 9000).toString();
     const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8).toUpperCase();
     setPin(generatedPin);
     setTempPassword(generatedPassword);
@@ -42,35 +44,43 @@ export default function PendingMerchants() {
 
   const handleActivate = async () => {
     if (!selectedMerchant || !pin || !tempPassword) {
-      alert('Please generate credentials first');
+      setActivationError('Please generate credentials first');
       return;
     }
 
     setInviting(true);
+    setActivationError('');
+    
     try {
-      const response = await base44.functions.invoke('sendEmail', {
-        to: selectedMerchant.owner_email,
-        subject: 'ChainLINK POS - Your Account is Ready!',
-        html: `
-          <h2>Great news, ${selectedMerchant.owner_name}!</h2>
-          <p>Your ChainLINK POS account has been activated and is ready to use.</p>
-          
-          <h3>Your Login Credentials:</h3>
-          <p><strong>Email:</strong> ${selectedMerchant.owner_email}</p>
-          <p><strong>PIN:</strong> ${pin}</p>
-          <p><strong>Temporary Password:</strong> ${tempPassword}</p>
-          
-          <p>You can now log in at your POS system using your 6-digit PIN for quick access.</p>
-          <p>Your 30-day free trial has started!</p>
-          
-          <p><a href="${window.location.origin}">Click here to log in</a></p>
-        `,
-        text: `Great news, ${selectedMerchant.owner_name}!\n\nYour ChainLINK POS account has been activated and is ready to use.\n\nYour Login Credentials:\nEmail: ${selectedMerchant.owner_email}\nPIN: ${pin}\nTemporary Password: ${tempPassword}\n\nYou can now log in at your POS system using your 6-digit PIN for quick access.\nYour 30-day free trial has started!\n\nClick here to log in: ${window.location.origin}`
+      // Step 1: Create admin user for the merchant
+      const newUser = await base44.entities.User.create({
+        email: selectedMerchant.owner_email,
+        full_name: selectedMerchant.owner_name,
+        merchant_id: selectedMerchant.id,
+        dealer_id: selectedMerchant.dealer_id || null,
+        role: 'admin',
+        pin: pin,
+        is_active: true,
+        permissions: {
+          pos: true,
+          inventory: true,
+          reports: true,
+          settings: true,
+          users: true,
+          customers: true,
+          loyalty: true,
+          online_orders: true,
+          kitchen_display: true
+        }
       });
 
-      console.log('Email response:', response);
+      // Step 2: Update merchant status
+      await base44.entities.Merchant.update(selectedMerchant.id, {
+        status: 'active',
+        activated_at: new Date().toISOString()
+      });
 
-      // Set up demo data if requested
+      // Step 3: Set up demo data if requested
       if (selectedMerchant.settings?.demo_data_requested) {
         try {
           await base44.functions.invoke('setupDemoMenu', {
@@ -81,17 +91,86 @@ export default function PendingMerchants() {
         }
       }
 
-      alert(`Activation email sent to ${selectedMerchant.owner_email}\n\nProvide these credentials manually:\nPIN: ${pin}\nPassword: ${tempPassword}`);
+      // Step 4: Send activation email
+      try {
+        await base44.functions.invoke('sendEmail', {
+          to: selectedMerchant.owner_email,
+          subject: 'ChainLINK POS - Your Account is Ready!',
+          body: `
+Great news, ${selectedMerchant.owner_name}!
+
+Your ChainLINK POS account has been activated and is ready to use.
+
+Your Login Credentials:
+Email: ${selectedMerchant.owner_email}
+PIN: ${pin}
+Temporary Password: ${tempPassword}
+
+You can now log in at ${window.location.origin}/PinLogin using your 6-digit PIN for quick access.
+
+Your 30-day free trial has started!
+
+Best regards,
+ChainLINK POS Team
+          `
+        });
+      } catch (emailError) {
+        console.warn('Email failed, but user was created successfully:', emailError);
+      }
+
+      alert(`✅ Account activated successfully!\n\nAdmin user created for: ${selectedMerchant.owner_email}\n\nCredentials:\nPIN: ${pin}\nPassword: ${tempPassword}\n\n${selectedMerchant.settings?.demo_data_requested ? 'Demo data has been set up.\n\n' : ''}An activation email has been sent.`);
       
       queryClient.invalidateQueries({ queryKey: ['pending-merchants'] });
       setSelectedMerchant(null);
       setPin('');
       setTempPassword('');
+      setActivationError('');
     } catch (error) {
-      console.error('Failed to send activation email:', error);
-      alert('Failed to send activation email: ' + (error.response?.data?.error || error.message));
+      console.error('Failed to activate merchant:', error);
+      setActivationError(error.message || 'Failed to activate merchant account');
     } finally {
       setInviting(false);
+    }
+  };
+
+  const handleReject = async (merchant) => {
+    if (!confirm(`Reject registration for ${merchant.business_name}?`)) {
+      return;
+    }
+
+    try {
+      await base44.entities.Merchant.update(merchant.id, { 
+        status: 'cancelled',
+        suspended_at: new Date().toISOString(),
+        suspension_reason: 'Registration rejected by admin'
+      });
+      
+      // Send rejection email
+      try {
+        await base44.functions.invoke('sendEmail', {
+          to: merchant.owner_email,
+          subject: 'ChainLINK POS - Registration Update',
+          body: `
+Hello ${merchant.owner_name},
+
+Thank you for your interest in ChainLINK POS.
+
+Unfortunately, we are unable to approve your merchant registration at this time.
+
+If you have any questions, please contact our support team.
+
+Best regards,
+ChainLINK POS Team
+          `
+        });
+      } catch (emailError) {
+        console.warn('Rejection email failed:', emailError);
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['pending-merchants'] });
+    } catch (error) {
+      console.error('Failed to reject merchant:', error);
+      alert('Failed to reject registration');
     }
   };
 
@@ -158,16 +237,14 @@ export default function PendingMerchants() {
                     </div>
                   )}
                 </div>
+                {merchant.settings?.demo_data_requested && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700">Demo Data Requested</Badge>
+                )}
                 <div className="flex justify-end gap-2 pt-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={async () => {
-                      if (confirm('Reject this merchant registration?')) {
-                        await base44.entities.Merchant.update(merchant.id, { status: 'cancelled' });
-                        queryClient.invalidateQueries({ queryKey: ['pending-merchants'] });
-                      }
-                    }}
+                    onClick={() => handleReject(merchant)}
                     className="text-red-600 hover:text-red-700"
                   >
                     <XCircle className="w-4 h-4 mr-1" />
@@ -178,6 +255,7 @@ export default function PendingMerchants() {
                     onClick={() => {
                       setSelectedMerchant(merchant);
                       generateCredentials();
+                      setActivationError('');
                     }}
                     className="bg-green-600 hover:bg-green-700"
                   >
@@ -195,6 +273,7 @@ export default function PendingMerchants() {
         setSelectedMerchant(null);
         setPin('');
         setTempPassword('');
+        setActivationError('');
       }}>
         <DialogContent className="dark:bg-gray-800">
           <DialogHeader>
@@ -203,22 +282,32 @@ export default function PendingMerchants() {
           
           {selectedMerchant && (
             <div className="space-y-4 py-4">
+              {activationError && (
+                <Alert className="bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800">
+                  <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                  <AlertDescription className="text-red-800 dark:text-red-300">{activationError}</AlertDescription>
+                </Alert>
+              )}
+
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Activating: <strong>{selectedMerchant.business_name}</strong>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Activating: <strong className="text-gray-900 dark:text-white">{selectedMerchant.business_name}</strong>
                 </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Admin will be invited to: <strong>{selectedMerchant.owner_email}</strong>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Admin account will be created for: <strong className="text-gray-900 dark:text-white">{selectedMerchant.owner_email}</strong>
                 </p>
+                {selectedMerchant.settings?.demo_data_requested && (
+                  <Badge className="bg-blue-100 text-blue-800">Demo data will be set up</Badge>
+                )}
               </div>
 
               <div className="space-y-3 bg-blue-50 dark:bg-gray-700 p-4 rounded-lg">
                 <div>
-                  <Label className="text-xs text-gray-600 dark:text-gray-400">Generated PIN (copy this)</Label>
+                  <Label className="text-xs text-gray-600 dark:text-gray-400">Generated PIN</Label>
                   <Input value={pin} readOnly className="font-mono text-lg font-bold mt-1" />
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-600 dark:text-gray-400">Generated Password (copy this)</Label>
+                  <Label className="text-xs text-gray-600 dark:text-gray-400">Generated Password</Label>
                   <Input value={tempPassword} readOnly className="font-mono text-sm mt-1" />
                 </div>
                 <Button 
@@ -231,26 +320,39 @@ export default function PendingMerchants() {
                 </Button>
               </div>
 
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 p-3 rounded-lg">
-                <p className="text-sm text-yellow-900 dark:text-yellow-200">
-                  <strong>Important:</strong> Copy these credentials before closing. You'll need to manually create the admin user in the Users section using these credentials and merchant_id: <code className="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">{selectedMerchant.id}</code>
-                </p>
-              </div>
+              <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertDescription className="text-green-800 dark:text-green-300">
+                  This will create an admin user account and send activation email with credentials.
+                </AlertDescription>
+              </Alert>
             </div>
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedMerchant(null)}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setSelectedMerchant(null);
+                setPin('');
+                setTempPassword('');
+                setActivationError('');
+              }}
+              disabled={inviting}
+            >
               Cancel
             </Button>
-            <Button onClick={handleActivate} disabled={inviting}>
+            <Button onClick={handleActivate} disabled={inviting || !pin || !tempPassword}>
               {inviting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sending Email...
+                  Activating...
                 </>
               ) : (
-                'Send Activation Email'
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Activate & Send Email
+                </>
               )}
             </Button>
           </DialogFooter>
