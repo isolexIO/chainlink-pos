@@ -886,17 +886,42 @@ export default function POSPage() {
   const loadDepartments = async () => {
     try {
       console.log('POS: Loading departments...');
-      const departmentList = await base44.entities.Department.list();
+      
+      // Get merchant_id reliably
+      let merchantId = settings?.merchant_id;
+      if (!merchantId) {
+        const pinUserJSON = localStorage.getItem('pinLoggedInUser');
+        if (pinUserJSON) {
+          try {
+            const pinUser = JSON.parse(pinUserJSON);
+            merchantId = pinUser.merchant_id;
+          } catch (e) {
+            console.error('Error parsing pinLoggedInUser:', e);
+          }
+        }
+      }
+      
+      if (!merchantId || merchantId === 'demo') {
+        console.log('POS: Demo mode, loading all departments');
+        const departmentList = await base44.entities.Department.list();
+        setDepartments(departmentList);
+        return;
+      }
+      
+      console.log('POS: Loading departments for merchant:', merchantId);
+      const departmentList = await base44.entities.Department.filter({ merchant_id: merchantId });
       console.log(`POS: Loaded ${departmentList.length} departments`);
       
-      // Filter by merchant_id
-      const merchantDepts = departmentList.filter(d => d.merchant_id === settings?.merchant_id);
-      console.log(`POS: Filtered to ${merchantDepts.length} departments for this merchant`);
-      
       // Sort by display_order
-      merchantDepts.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+      departmentList.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
       
-      setDepartments(merchantDepts);
+      console.log('POS: Department data:', departmentList.map(d => ({
+        name: d.name,
+        color: d.color,
+        icon: d.icon
+      })));
+      
+      setDepartments(departmentList);
     } catch (error) {
       console.error("Error loading departments:", error);
       setDepartments([]);
