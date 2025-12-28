@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import WelcomeScreen from '../components/customer-display/WelcomeScreen';
@@ -49,58 +48,70 @@ export default function CustomerDisplayPage() {
       setError(null);
       console.log('CustomerDisplay: Initializing...');
 
-      // Get merchant from pinLoggedInUser or authenticated user
-      let user = null;
-      const pinUserJSON = localStorage.getItem('pinLoggedInUser');
+      // Get merchant_id from URL params first (public access)
+      const urlParams = new URLSearchParams(window.location.search);
+      const merchantIdFromUrl = urlParams.get('merchant_id');
+      const stationIdFromUrl = urlParams.get('station_id');
       
-      if (pinUserJSON) {
-        try {
-          user = JSON.parse(pinUserJSON);
-          console.log('CustomerDisplay: Using pinLoggedInUser:', user.email);
-        } catch (e) {
-          console.error('Error parsing pinLoggedInUser:', e);
-        }
-      }
+      console.log('CustomerDisplay: URL params:', { merchantIdFromUrl, stationIdFromUrl });
 
-      if (!user) {
-        try {
-          user = await base44.auth.me();
-          console.log('CustomerDisplay: Using authenticated user:', user?.email);
-        } catch (e) {
-          console.error('CustomerDisplay: No authenticated user');
-          setError('Please log in to use customer display');
+      let merchantId = merchantIdFromUrl;
+      let userId = null;
+      
+      // If no merchant_id in URL, fall back to user authentication
+      if (!merchantId) {
+        let user = null;
+        const pinUserJSON = localStorage.getItem('pinLoggedInUser');
+        
+        if (pinUserJSON) {
+          try {
+            user = JSON.parse(pinUserJSON);
+            console.log('CustomerDisplay: Using pinLoggedInUser:', user.email);
+          } catch (e) {
+            console.error('Error parsing pinLoggedInUser:', e);
+          }
+        }
+
+        if (!user) {
+          try {
+            user = await base44.auth.me();
+            console.log('CustomerDisplay: Using authenticated user:', user?.email);
+          } catch (e) {
+            console.error('CustomerDisplay: No authenticated user');
+            setError('Please log in to use customer display');
+            return;
+          }
+        }
+
+        if (!user?.merchant_id) {
+          setError('No merchant associated with user');
           return;
         }
-      }
-
-      if (!user?.merchant_id) {
-        setError('No merchant associated with user');
-        return;
+        
+        merchantId = user.merchant_id;
+        userId = user.id;
       }
 
       // Load merchant data
-      const merchantData = await base44.entities.Merchant.get(user.merchant_id);
+      const merchantData = await base44.entities.Merchant.get(merchantId);
       console.log('CustomerDisplay: Loaded merchant:', merchantData.business_name);
       setMerchant(merchantData);
 
-      // Get station ID from URL params if available
-      const urlParams = new URLSearchParams(window.location.search);
-      const stationIdFromUrl = urlParams.get('station_id');
       if (stationIdFromUrl) {
-        setStationId(stationIdFromUrl); // Set the stationId state
-        console.log('CustomerDisplay: Initializing with station_id from URL:', stationIdFromUrl);
+        setStationId(stationIdFromUrl);
+        console.log('CustomerDisplay: Station ID from URL:', stationIdFromUrl);
       }
 
       // Register device session
       try {
         const result = await base44.functions.invoke('registerDeviceSession', {
-          merchant_id: user.merchant_id,
+          merchant_id: merchantId,
           device_name: 'Customer Display',
           device_type: 'customer_display',
-          station_id: stationIdFromUrl || null, // Use stationId from URL
+          station_id: stationIdFromUrl || null,
           station_name: null,
-          user_id: user.id,
-          user_name: user.full_name || user.email
+          user_id: userId || null,
+          user_name: userId ? 'Customer Display' : null
         });
 
         if (result.data?.session_id) {
