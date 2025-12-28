@@ -4,28 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mail, Phone, Send, MapPin, Link2 } from 'lucide-react'; 
-
-// Helper function to create URLs based on page names.
-// This is a placeholder and should be replaced with actual routing logic (e.g., Next.js Router, React Router)
-const createPageUrl = (pageName) => {
-  switch (pageName) {
-    case 'Home':
-      return '/';
-    case 'About':
-      return '/about';
-    case 'Contact':
-      return '/contact';
-    case 'DeviceShop':
-      return '/device-shop';
-    case 'DealerLanding':
-      return '/dealers';
-    case 'EmailLogin':
-      return '/login';
-    default:
-      return '/';
-  }
-};
+import { Mail, Phone, Send, MapPin, Link2 } from 'lucide-react';
+import { createPageUrl } from '@/utils';
 
 export default function ContactPage() {
   const handleFormSubmit = (e) => {
@@ -78,7 +58,7 @@ export default function ContactPage() {
               </a>
               {/* Removed Dealer Link */}
               <Button 
-                onClick={() => window.location.href = createPageUrl('EmailLogin')}
+                onClick={() => window.location.href = createPageUrl('PinLogin')}
                 className="bg-green-500 hover:bg-green-600 text-white"
               >
                 Sign In
@@ -86,7 +66,7 @@ export default function ContactPage() {
             </div>
             <div className="md:hidden">
               <Button 
-                onClick={() => window.location.href = createPageUrl('EmailLogin')}
+                onClick={() => window.location.href = createPageUrl('PinLogin')}
                 size="sm"
                 className="bg-green-500 hover:bg-green-600 text-white"
               >
