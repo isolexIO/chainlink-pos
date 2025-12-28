@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
@@ -890,24 +889,14 @@ export default function POSPage() {
       const departmentList = await base44.entities.Department.list();
       console.log(`POS: Loaded ${departmentList.length} departments`);
       
-      // Deduplicate departments by name (keep the most recent one)
-      const uniqueDepartments = [];
-      const seenNames = new Set();
+      // Filter by merchant_id
+      const merchantDepts = departmentList.filter(d => d.merchant_id === settings?.merchant_id);
+      console.log(`POS: Filtered to ${merchantDepts.length} departments for this merchant`);
       
-      // Sort by created_date descending (most recent first)
-      const sortedDepts = [...departmentList].sort((a, b) => 
-        new Date(b.created_date) - new Date(a.created_date)
-      );
+      // Sort by display_order
+      merchantDepts.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
       
-      for (const dept of sortedDepts) {
-        if (!seenNames.has(dept.name)) {
-          uniqueDepartments.push(dept);
-          seenNames.add(dept.name);
-        }
-      }
-      
-      console.log(`POS: After deduplication: ${uniqueDepartments.length} unique departments`);
-      setDepartments(uniqueDepartments);
+      setDepartments(merchantDepts);
     } catch (error) {
       console.error("Error loading departments:", error);
       setDepartments([]);
