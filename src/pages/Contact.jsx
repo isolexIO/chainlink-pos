@@ -28,58 +28,30 @@ const createPageUrl = (pageName) => {
 };
 
 export default function ContactPage() {
-  const [submitted, setSubmitted] = useState(false);
+  const handleFormSubmit = (e) => {
+    const form = e.target;
+    const inputs = form.elements;
+    const required = [];
 
-  useEffect(() => {
-    // Load Vtiger form script
-    const script = document.createElement('script');
-    script.innerHTML = `
-      window.onload = function() {
-        var N=navigator.appName, ua=navigator.userAgent, tem;
-        var M=ua.match(/(opera|chrome|safari|firefox|msie)\/?\s*(\.?\d+(\.\d+)*)/i);
-        if(M && (tem= ua.match(/version\/([\.\d]+)/i))!= null) M[2]= tem[1];
-        M=M? [M[1], M[2]]: [N, navigator.appVersion, "-?"];
-        var browserName = M[0];
-        var form = document.getElementById("__vtigerWebForm");
-        if (!form) return;
-        var inputs = form.elements;
-        form.onsubmit = function() {
-          var required = [], att, val;
-          for (var i = 0; i < inputs.length; i++) {
-            att = inputs[i].getAttribute("required");
-            val = inputs[i].value;
-            type = inputs[i].type;
-            if(type == "email") {
-              if(val != "") {
-                var elemLabel = inputs[i].getAttribute("label");
-                var emailFilter = /^[_/a-zA-Z0-9]+([!"#$%&()*+,./:;<=>?\^_\`{|}~-]?[a-zA-Z0-9/_/-])*@[a-zA-Z0-9]+([\_\-\.]?[a-zA-Z0-9]+)*\.([\-\_]?[a-zA-Z0-9])+(\.?[a-zA-Z0-9]+)?$/;
-                var illegalChars= /[\(\)\<\>\,\;\:\"\[\]]/;
-                if (!emailFilter.test(val)) {
-                  alert("Please enter valid email address");
-                  return false;
-                } else if (val.match(illegalChars)) {
-                  alert("Email contains illegal characters");
-                  return false;
-                }
-              }
-            }
-            if (att != null) {
-              if (val.replace(/^\s+|\s+$/g, "") == "") {
-                required.push(inputs[i].getAttribute("label") || inputs[i].name);
-              }
-            }
-          }
-          if (required.length > 0) {
-            alert("The following fields are required: " + required.join(", "));
-            return false;
-          }
-          return true;
-        };
-      };
-    `;
-    document.body.appendChild(script);
-    return () => document.body.removeChild(script);
-  }, []);
+    for (let i = 0; i < inputs.length; i++) {
+      const input = inputs[i];
+      const isRequired = input.hasAttribute("required");
+      const value = input.value;
+
+      if (isRequired && value.trim() === "") {
+        const label = input.getAttribute("label") || input.name;
+        required.push(label);
+      }
+    }
+
+    if (required.length > 0) {
+      e.preventDefault();
+      alert("The following fields are required: " + required.join(", "));
+      return false;
+    }
+
+    return true;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-green-900">
@@ -148,6 +120,7 @@ export default function ContactPage() {
               method="post" 
               acceptCharset="utf-8" 
               encType="multipart/form-data"
+              onSubmit={handleFormSubmit}
               className="space-y-6"
             >
               <input type="hidden" name="__vtrftk" value="sid:2cfd67a6ac654f2454ba88725c0d3f1b70795081,1766928478" />
