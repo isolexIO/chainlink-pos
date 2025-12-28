@@ -22,7 +22,6 @@ import { Link } from 'react-router-dom';
 export default function DeviceShopPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [cart, setCart] = useState([]);
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -43,9 +42,9 @@ export default function DeviceShopPage() {
   }, []);
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['deviceShopProducts'],
+    queryKey: ['affiliateProducts'],
     queryFn: async () => {
-      const allProducts = await base44.entities.DeviceShopProduct.list();
+      const allProducts = await base44.entities.AffiliateProduct.list('-sort_order');
       return allProducts.filter(p => p.is_active);
     },
   });
@@ -67,58 +66,8 @@ export default function DeviceShopPage() {
     return matchesCategory && matchesSearch;
   });
 
-  const addToCart = (product) => {
-    if (!isAuthenticated) {
-      alert('Please log in to add items to cart');
-      return;
-    }
-
-    const existingItem = cart.find(item => item.id === product.id);
-    if (existingItem) {
-      setCart(cart.map(item =>
-        item.id === product.id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      ));
-    } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
-    }
-  };
-
-  const removeFromCart = (productId) => {
-    setCart(cart.filter(item => item.id !== productId));
-  };
-
-  const updateQuantity = (productId, newQuantity) => {
-    if (newQuantity === 0) {
-      removeFromCart(productId);
-      return;
-    }
-    setCart(cart.map(item =>
-      item.id === productId
-        ? { ...item, quantity: newQuantity }
-        : item
-    ));
-  };
-
-  const getTotalPrice = () => {
-    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  };
-
-  const handleCheckout = async () => {
-    if (!isAuthenticated) {
-      alert('Please log in to complete your purchase');
-      window.location.href = createPageUrl('EmailLogin');
-      return;
-    }
-
-    if (cart.length === 0) {
-      alert('Your cart is empty');
-      return;
-    }
-
-    // Proceed with checkout logic
-    alert('Checkout functionality coming soon!');
+  const handleBuyNow = (product) => {
+    window.open(product.amazon_link, '_blank');
   };
 
   if (isLoading) {
@@ -176,7 +125,7 @@ export default function DeviceShopPage() {
                 <>
                   <Button
                     variant="ghost"
-                    onClick={() => window.location.href = createPageUrl('EmailLogin')}
+                    onClick={() => window.location.href = createPageUrl('PinLogin')}
                   >
                     Login
                   </Button>
@@ -187,27 +136,12 @@ export default function DeviceShopPage() {
                   </Button>
                 </>
               ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    className="relative"
-                    onClick={() => document.getElementById('cart-section')?.scrollIntoView({ behavior: 'smooth' })}
-                  >
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    Cart
-                    {cart.length > 0 && (
-                      <Badge className="absolute -top-2 -right-2 bg-red-500">
-                        {cart.length}
-                      </Badge>
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => window.location.href = createPageUrl('SystemMenu')}
-                  >
-                    Dashboard
-                  </Button>
-                </>
+                <Button
+                  variant="ghost"
+                  onClick={() => window.location.href = createPageUrl('SystemMenu')}
+                >
+                  Dashboard
+                </Button>
               )}
             </div>
 
@@ -245,7 +179,7 @@ export default function DeviceShopPage() {
                       <Button
                         variant="ghost"
                         className="w-full justify-start mb-2"
-                        onClick={() => window.location.href = createPageUrl('EmailLogin')}
+                        onClick={() => window.location.href = createPageUrl('PinLogin')}
                       >
                         <LogIn className="w-4 h-4 mr-2" />
                         Login
@@ -258,23 +192,13 @@ export default function DeviceShopPage() {
                       </Button>
                     </>
                   ) : (
-                    <>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start mb-2"
-                        onClick={() => document.getElementById('cart-section')?.scrollIntoView({ behavior: 'smooth' })}
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        Cart {cart.length > 0 && `(${cart.length})`}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start"
-                        onClick={() => window.location.href = createPageUrl('SystemMenu')}
-                      >
-                        Dashboard
-                      </Button>
-                    </>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => window.location.href = createPageUrl('SystemMenu')}
+                    >
+                      Dashboard
+                    </Button>
                   )}
                 </div>
               </div>
@@ -286,12 +210,17 @@ export default function DeviceShopPage() {
       {/* Shop Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4">
-            <Package className="w-12 h-12" />
-            <div>
-              <h1 className="text-3xl font-bold">Device Shop</h1>
-              <p className="text-blue-100">Professional POS Hardware & Equipment</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Package className="w-12 h-12" />
+              <div>
+                <h1 className="text-3xl font-bold">Device Shop</h1>
+                <p className="text-blue-100">Professional POS Hardware & Equipment</p>
+              </div>
             </div>
+            <Badge className="bg-orange-500 text-white text-sm px-3 py-1">
+              Amazon Affiliate Store
+            </Badge>
           </div>
         </div>
       </div>
@@ -354,36 +283,18 @@ export default function DeviceShopPage() {
                     <span className="text-2xl font-bold text-green-600">
                       ${product.price.toFixed(2)}
                     </span>
-                    {product.stock_quantity > 0 ? (
-                      <Badge variant="outline" className="text-green-600">
-                        In Stock
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-red-600">
-                        Out of Stock
-                      </Badge>
-                    )}
+                    <Badge variant="outline" className="text-blue-600">
+                      On Amazon
+                    </Badge>
                   </div>
 
-                  {isAuthenticated ? (
-                    <Button
-                      className="w-full"
-                      onClick={() => addToCart(product)}
-                      disabled={product.stock_quantity === 0}
-                    >
-                      <ShoppingCart className="w-4 h-4 mr-2" />
-                      Add to Cart
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      onClick={() => window.location.href = createPageUrl('EmailLogin')}
-                    >
-                      <LogIn className="w-4 h-4 mr-2" />
-                      Login to Purchase
-                    </Button>
-                  )}
+                  <Button
+                    className="w-full bg-orange-500 hover:bg-orange-600"
+                    onClick={() => handleBuyNow(product)}
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Buy on Amazon
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -397,72 +308,6 @@ export default function DeviceShopPage() {
           </div>
         )}
 
-        {/* Shopping Cart Section */}
-        {isAuthenticated && cart.length > 0 && (
-          <Card id="cart-section" className="sticky bottom-4">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="w-5 h-5" />
-                Shopping Cart ({cart.length} items)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {cart.map(item => (
-                  <div key={item.id} className="flex items-center justify-between border-b pb-3">
-                    <div className="flex-1">
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-sm text-gray-500">${item.price.toFixed(2)} each</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        >
-                          -
-                        </Button>
-                        <span className="w-8 text-center">{item.quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        >
-                          +
-                        </Button>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFromCart(item.id)}
-                        className="text-red-600"
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <span className="text-xl font-bold">Total:</span>
-                  <span className="text-2xl font-bold text-green-600">
-                    ${getTotalPrice().toFixed(2)}
-                  </span>
-                </div>
-
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={handleCheckout}
-                >
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Proceed to Checkout
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
