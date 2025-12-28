@@ -48,6 +48,43 @@ export default function DepartmentsTab() {
   const [error, setError] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
 
+  const ICON_OPTIONS = [
+    { name: 'Utensils', icon: Utensils },
+    { name: 'Coffee', icon: Coffee },
+    { name: 'Pizza', icon: Pizza },
+    { name: 'Beer', icon: Beer },
+    { name: 'Cake', icon: Cake },
+    { name: 'Sandwich', icon: Sandwich },
+    { name: 'IceCream', icon: IceCream },
+    { name: 'Wine', icon: Wine },
+    { name: 'Salad', icon: Salad },
+    { name: 'Fish', icon: Fish },
+    { name: 'Drumstick', icon: Drumstick },
+    { name: 'Soup', icon: Soup },
+    { name: 'Cookie', icon: Cookie },
+    { name: 'Apple', icon: Apple },
+    { name: 'Grape', icon: Grape },
+    { name: 'Cherry', icon: Cherry },
+  ];
+
+  const COLOR_OPTIONS = [
+    { name: 'Indigo', value: '#6366f1' },
+    { name: 'Blue', value: '#3b82f6' },
+    { name: 'Green', value: '#10b981' },
+    { name: 'Yellow', value: '#f59e0b' },
+    { name: 'Red', value: '#ef4444' },
+    { name: 'Purple', value: '#a855f7' },
+    { name: 'Pink', value: '#ec4899' },
+    { name: 'Orange', value: '#f97316' },
+    { name: 'Teal', value: '#14b8a6' },
+    { name: 'Cyan', value: '#06b6d4' },
+  ];
+
+  const getIconComponent = (iconName) => {
+    const iconOption = ICON_OPTIONS.find(opt => opt.name === iconName);
+    return iconOption ? iconOption.icon : Utensils;
+  };
+
   useEffect(() => {
     loadData();
   }, []);
