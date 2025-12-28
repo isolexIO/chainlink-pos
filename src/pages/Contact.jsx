@@ -1,9 +1,9 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mail, Phone, Send, MapPin, Link2 } from 'lucide-react'; 
 
 // Helper function to create URLs based on page names.
@@ -28,36 +28,58 @@ const createPageUrl = (pageName) => {
 };
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    company: '',
-    phone: '',
-    subject: '',
-    message: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setSubmitted(true);
-    // Optionally clear form data after submission
-    setFormData({
-      name: '',
-      email: '',
-      company: '',
-      phone: '',
-      subject: '',
-      message: ''
-    });
-    setIsSubmitting(false);
-  };
+  useEffect(() => {
+    // Load Vtiger form script
+    const script = document.createElement('script');
+    script.innerHTML = `
+      window.onload = function() {
+        var N=navigator.appName, ua=navigator.userAgent, tem;
+        var M=ua.match(/(opera|chrome|safari|firefox|msie)\/?\s*(\.?\d+(\.\d+)*)/i);
+        if(M && (tem= ua.match(/version\/([\.\d]+)/i))!= null) M[2]= tem[1];
+        M=M? [M[1], M[2]]: [N, navigator.appVersion, "-?"];
+        var browserName = M[0];
+        var form = document.getElementById("__vtigerWebForm");
+        if (!form) return;
+        var inputs = form.elements;
+        form.onsubmit = function() {
+          var required = [], att, val;
+          for (var i = 0; i < inputs.length; i++) {
+            att = inputs[i].getAttribute("required");
+            val = inputs[i].value;
+            type = inputs[i].type;
+            if(type == "email") {
+              if(val != "") {
+                var elemLabel = inputs[i].getAttribute("label");
+                var emailFilter = /^[_/a-zA-Z0-9]+([!"#$%&()*+,./:;<=>?\^_\`{|}~-]?[a-zA-Z0-9/_/-])*@[a-zA-Z0-9]+([\_\-\.]?[a-zA-Z0-9]+)*\.([\-\_]?[a-zA-Z0-9])+(\.?[a-zA-Z0-9]+)?$/;
+                var illegalChars= /[\(\)\<\>\,\;\:\"\[\]]/;
+                if (!emailFilter.test(val)) {
+                  alert("Please enter valid email address");
+                  return false;
+                } else if (val.match(illegalChars)) {
+                  alert("Email contains illegal characters");
+                  return false;
+                }
+              }
+            }
+            if (att != null) {
+              if (val.replace(/^\s+|\s+$/g, "") == "") {
+                required.push(inputs[i].getAttribute("label") || inputs[i].name);
+              }
+            }
+          }
+          if (required.length > 0) {
+            alert("The following fields are required: " + required.join(", "));
+            return false;
+          }
+          return true;
+        };
+      };
+    `;
+    document.body.appendChild(script);
+    return () => document.body.removeChild(script);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-green-900">
@@ -119,112 +141,178 @@ export default function ContactPage() {
             <h2 className="text-3xl font-bold text-white mb-6">
               Send us a Message
             </h2>
-            {submitted ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Send className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-2">Message Sent!</h3>
-                <p className="text-gray-200 mb-6">
-                  Thank you for contacting us. We'll get back to you within 24 hours.
-                </p>
-                <Button 
-                  onClick={() => setSubmitted(false)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  Send Another Message
-                </Button>
+            <form 
+              id="__vtigerWebForm" 
+              name="ChainLINK" 
+              action="https://console.isolex.net/modules/Webforms/capture.php" 
+              method="post" 
+              acceptCharset="utf-8" 
+              encType="multipart/form-data"
+              className="space-y-6"
+            >
+              <input type="hidden" name="__vtrftk" value="sid:2cfd67a6ac654f2454ba88725c0d3f1b70795081,1766928478" />
+              <input type="hidden" name="publicid" value="0f2ae2da8ebc23794ce1a94fc5c28791" />
+              <input type="hidden" name="urlencodeenable" value="1" />
+              <input type="hidden" name="name" value="ChainLINK" />
+              
+              <div>
+                <Label htmlFor="company" className="text-white">Company *</Label>
+                <Input
+                  type="text"
+                  name="company"
+                  id="company"
+                  required
+                  label="Company"
+                  placeholder="Your Company"
+                  className="bg-white/10 text-white border-white/20 placeholder:text-white/50"
+                />
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name" className="text-white">Full Name *</Label>
-                    <Input
-                      id="name"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      placeholder="John Doe"
-                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600 bg-white/10 text-white border-white/20"
-                    />
-                  </div>
 
-                  <div>
-                    <Label htmlFor="email" className="text-white">Email Address *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      placeholder="john@example.com"
-                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600 bg-white/10 text-white border-white/20"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="company" className="text-white">Company Name</Label>
-                    <Input
-                      id="company"
-                      value={formData.company}
-                      onChange={(e) => setFormData({...formData, company: e.target.value})}
-                      placeholder="Your Business"
-                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600 bg-white/10 text-white border-white/20"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone" className="text-white">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      placeholder="+1 (555) 123-4567"
-                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600 bg-white/10 text-white border-white/20"
-                    />
-                  </div>
-                </div>
-
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="subject" className="text-white">Subject *</Label>
+                  <Label htmlFor="firstname" className="text-white">First Name *</Label>
                   <Input
-                    id="subject"
+                    type="text"
+                    name="firstname"
+                    id="firstname"
                     required
-                    value={formData.subject}
-                    onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                    placeholder="How can we help?"
-                    className="dark:bg-gray-700 dark:text-white dark:border-gray-600 bg-white/10 text-white border-white/20"
+                    label="First Name"
+                    placeholder="John"
+                    className="bg-white/10 text-white border-white/20 placeholder:text-white/50"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="message" className="text-white">Message *</Label>
-                  <Textarea
-                    id="message"
+                  <Label htmlFor="lastname" className="text-white">Last Name *</Label>
+                  <Input
+                    type="text"
+                    name="lastname"
+                    id="lastname"
                     required
-                    value={formData.message}
-                    onChange={(e) => setFormData({...formData, message: e.target.value})}
-                    placeholder="Tell us more about your inquiry..."
-                    rows={6}
-                    className="dark:bg-gray-700 dark:text-white dark:border-gray-600 bg-white/10 text-white border-white/20"
+                    label="Last Name"
+                    placeholder="Doe"
+                    className="bg-white/10 text-white border-white/20 placeholder:text-white/50"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="phone" className="text-white">Primary Phone *</Label>
+                  <Input
+                    type="text"
+                    name="phone"
+                    id="phone"
+                    required
+                    label="Primary Phone"
+                    placeholder="+1 (555) 123-4567"
+                    className="bg-white/10 text-white border-white/20 placeholder:text-white/50"
                   />
                 </div>
 
-                <Button 
-                  type="submit" 
-                  size="lg" 
-                  className="w-full bg-gradient-to-r from-purple-600 to-green-500 hover:from-purple-700 hover:to-green-600 text-white"
-                  disabled={isSubmitting}
+                <div>
+                  <Label htmlFor="mobile" className="text-white">Mobile Phone</Label>
+                  <Input
+                    type="text"
+                    name="mobile"
+                    id="mobile"
+                    label="Mobile Phone"
+                    placeholder="+1 (555) 987-6543"
+                    className="bg-white/10 text-white border-white/20 placeholder:text-white/50"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="industry" className="text-white">Industry *</Label>
+                <select 
+                  name="industry" 
+                  id="industry"
+                  required
+                  label="industry"
+                  className="flex h-10 w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/20"
                 >
-                  {isSubmitting ? 'Sending...' : 'Send Message'}
-                  <Send className="w-4 h-4 ml-2" />
-                </Button>
-              </form>
-            )}
+                  <option value="" className="text-gray-900">Select Industry</option>
+                  <option value="Convienance Store" className="text-gray-900">Convenience Store</option>
+                  <option value="Restaurant" className="text-gray-900">Restaurant</option>
+                  <option value="Automotive" className="text-gray-900">Automotive</option>
+                  <option value="Bar" className="text-gray-900">Bar</option>
+                  <option value="Apparel" className="text-gray-900">Apparel</option>
+                  <option value="Banking" className="text-gray-900">Banking</option>
+                  <option value="Biotechnology" className="text-gray-900">Biotechnology</option>
+                  <option value="Chemicals" className="text-gray-900">Chemicals</option>
+                  <option value="Communications" className="text-gray-900">Communications</option>
+                  <option value="Construction" className="text-gray-900">Construction</option>
+                  <option value="Consulting" className="text-gray-900">Consulting</option>
+                  <option value="Education" className="text-gray-900">Education</option>
+                  <option value="Electronics" className="text-gray-900">Electronics</option>
+                  <option value="Energy" className="text-gray-900">Energy</option>
+                  <option value="Engineering" className="text-gray-900">Engineering</option>
+                  <option value="Entertainment" className="text-gray-900">Entertainment</option>
+                  <option value="Environmental" className="text-gray-900">Environmental</option>
+                  <option value="Finance" className="text-gray-900">Finance</option>
+                  <option value="Food & Beverage" className="text-gray-900">Food & Beverage</option>
+                  <option value="Government" className="text-gray-900">Government</option>
+                  <option value="Healthcare" className="text-gray-900">Healthcare</option>
+                  <option value="Hospitality" className="text-gray-900">Hospitality</option>
+                  <option value="Insurance" className="text-gray-900">Insurance</option>
+                  <option value="Machinery" className="text-gray-900">Machinery</option>
+                  <option value="Manufacturing" className="text-gray-900">Manufacturing</option>
+                  <option value="Media" className="text-gray-900">Media</option>
+                  <option value="Not For Profit" className="text-gray-900">Not For Profit</option>
+                  <option value="Recreation" className="text-gray-900">Recreation</option>
+                  <option value="Retail" className="text-gray-900">Retail</option>
+                  <option value="Shipping" className="text-gray-900">Shipping</option>
+                  <option value="Technology" className="text-gray-900">Technology</option>
+                  <option value="Telecommunications" className="text-gray-900">Telecommunications</option>
+                  <option value="Transportation" className="text-gray-900">Transportation</option>
+                  <option value="Utilities" className="text-gray-900">Utilities</option>
+                  <option value="Petro" className="text-gray-900">Petro</option>
+                  <option value="Other" className="text-gray-900">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <Label htmlFor="code" className="text-white">Postal Code *</Label>
+                <Input
+                  type="text"
+                  name="code"
+                  id="code"
+                  required
+                  label="Postal Code"
+                  placeholder="12345"
+                  className="bg-white/10 text-white border-white/20 placeholder:text-white/50"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description" className="text-white">Description</Label>
+                <Textarea
+                  name="description"
+                  id="description"
+                  placeholder="Tell us more about your inquiry..."
+                  rows={6}
+                  className="bg-white/10 text-white border-white/20 placeholder:text-white/50"
+                />
+              </div>
+
+              <select name="leadstatus" label="leadstatus" hidden defaultValue="New Lead">
+                <option value="New Lead">New Lead</option>
+              </select>
+
+              <select name="leadsource" label="leadsource" hidden defaultValue="Web Site">
+                <option value="Web Site">Web Site</option>
+              </select>
+
+              <Button 
+                type="submit" 
+                size="lg" 
+                className="w-full bg-gradient-to-r from-purple-600 to-green-500 hover:from-purple-700 hover:to-green-600 text-white"
+              >
+                Send Message
+                <Send className="w-4 h-4 ml-2" />
+              </Button>
+            </form>
           </div>
 
           {/* Contact Information */}
