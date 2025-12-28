@@ -18,7 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Layers, Plus, Edit2, Trash2, Package, AlertCircle, Save, X } from 'lucide-react';
+import { 
+  Layers, Plus, Edit2, Trash2, Package, AlertCircle, Save, X,
+  Coffee, Utensils, Pizza, Beer, Cake, Sandwich, IceCream, Wine,
+  Salad, Fish, Drumstick, Soup, Cookie, Apple, Grape, Cherry
+} from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -30,10 +34,14 @@ export default function DepartmentsTab() {
   const [editingDepartment, setEditingDepartment] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [editingDescription, setEditingDescription] = useState('');
+  const [editingColor, setEditingColor] = useState('');
+  const [editingIcon, setEditingIcon] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showBulkAssignDialog, setShowBulkAssignDialog] = useState(false);
   const [newDepartmentName, setNewDepartmentName] = useState('');
   const [newDepartmentDescription, setNewDepartmentDescription] = useState('');
+  const [newDepartmentColor, setNewDepartmentColor] = useState('#6366f1');
+  const [newDepartmentIcon, setNewDepartmentIcon] = useState('Utensils');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -193,12 +201,16 @@ export default function DepartmentsTab() {
         merchant_id: currentUser.merchant_id,
         name: newDepartmentName.trim(),
         description: newDepartmentDescription.trim() || '',
+        color: newDepartmentColor,
+        icon: newDepartmentIcon,
         display_order: departments.length,
         is_active: true
       });
 
       setNewDepartmentName('');
       setNewDepartmentDescription('');
+      setNewDepartmentColor('#6366f1');
+      setNewDepartmentIcon('Utensils');
       setShowAddDialog(false);
       await loadData();
     } catch (error) {
@@ -211,6 +223,8 @@ export default function DepartmentsTab() {
     setEditingDepartment(dept.id);
     setEditingName(dept.name);
     setEditingDescription(dept.description || '');
+    setEditingColor(dept.color || '#6366f1');
+    setEditingIcon(dept.icon || 'Utensils');
   };
 
   const handleSaveEdit = async () => {
@@ -236,6 +250,8 @@ export default function DepartmentsTab() {
         merchant_id: dept.merchant_id,
         name: editingName.trim(),
         description: editingDescription.trim() || '',
+        color: editingColor,
+        icon: editingIcon,
         display_order: dept.display_order,
         is_active: dept.is_active
       });
@@ -268,6 +284,8 @@ export default function DepartmentsTab() {
     setEditingDepartment(null);
     setEditingName('');
     setEditingDescription('');
+    setEditingColor('');
+    setEditingIcon('');
   };
 
   const handleDeleteDepartment = async (dept) => {
@@ -412,28 +430,91 @@ export default function DepartmentsTab() {
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   {editingDepartment === dept.id ? (
-                    <div className="flex-1 space-y-3">
-                      <div>
-                        <Label htmlFor="edit-name">Department Name</Label>
-                        <Input
-                          id="edit-name"
-                          value={editingName}
-                          onChange={(e) => setEditingName(e.target.value)}
-                          placeholder="Department name"
-                          className="max-w-md"
-                        />
+                    <div className="flex-1 space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="edit-name">Department Name</Label>
+                          <Input
+                            id="edit-name"
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            placeholder="Department name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-description">Description (optional)</Label>
+                          <Textarea
+                            id="edit-description"
+                            value={editingDescription}
+                            onChange={(e) => setEditingDescription(e.target.value)}
+                            placeholder="Department description"
+                            rows={2}
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="edit-description">Description (optional)</Label>
-                        <Textarea
-                          id="edit-description"
-                          value={editingDescription}
-                          onChange={(e) => setEditingDescription(e.target.value)}
-                          placeholder="Department description"
-                          className="max-w-md"
-                          rows={2}
-                        />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Tile Color</Label>
+                          <div className="grid grid-cols-5 gap-2 mt-2">
+                            {COLOR_OPTIONS.map((color) => (
+                              <button
+                                key={color.value}
+                                type="button"
+                                onClick={() => setEditingColor(color.value)}
+                                className={`w-12 h-12 rounded-lg transition-all ${
+                                  editingColor === color.value
+                                    ? 'ring-2 ring-offset-2 ring-blue-600 scale-110'
+                                    : 'hover:scale-105'
+                                }`}
+                                style={{ backgroundColor: color.value }}
+                                title={color.name}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label>Tile Icon</Label>
+                          <div className="grid grid-cols-4 gap-2 mt-2">
+                            {ICON_OPTIONS.map((iconOption) => {
+                              const IconComp = iconOption.icon;
+                              return (
+                                <button
+                                  key={iconOption.name}
+                                  type="button"
+                                  onClick={() => setEditingIcon(iconOption.name)}
+                                  className={`p-3 rounded-lg border-2 transition-all ${
+                                    editingIcon === iconOption.name
+                                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                  title={iconOption.name}
+                                >
+                                  <IconComp className="w-6 h-6 mx-auto" />
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
+
+                      <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                        <div
+                          className="w-16 h-16 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: editingColor }}
+                        >
+                          {(() => {
+                            const IconComp = getIconComponent(editingIcon);
+                            return <IconComp className="w-8 h-8 text-white" />;
+                          })()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Tile Preview</p>
+                          <p className="text-xs text-gray-500">This is how your department will appear in POS</p>
+                        </div>
+                      </div>
+
                       <div className="flex gap-2">
                         <Button size="sm" onClick={handleSaveEdit}>
                           <Save className="w-4 h-4 mr-1" />
@@ -447,19 +528,30 @@ export default function DepartmentsTab() {
                     </div>
                   ) : (
                     <>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-lg font-semibold">{dept.name}</h3>
-                          <Badge variant="secondary">
-                            {dept.productCount} {dept.productCount === 1 ? 'product' : 'products'}
-                          </Badge>
-                          {!dept.is_active && (
-                            <Badge variant="destructive">Inactive</Badge>
+                      <div className="flex items-center gap-4 flex-1">
+                        <div
+                          className="w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: dept.color || '#6366f1' }}
+                        >
+                          {(() => {
+                            const IconComp = getIconComponent(dept.icon);
+                            return <IconComp className="w-7 h-7 text-white" />;
+                          })()}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <h3 className="text-lg font-semibold">{dept.name}</h3>
+                            <Badge variant="secondary">
+                              {dept.productCount} {dept.productCount === 1 ? 'product' : 'products'}
+                            </Badge>
+                            {!dept.is_active && (
+                              <Badge variant="destructive">Inactive</Badge>
+                            )}
+                          </div>
+                          {dept.description && (
+                            <p className="text-sm text-gray-500 mt-1">{dept.description}</p>
                           )}
                         </div>
-                        {dept.description && (
-                          <p className="text-sm text-gray-500 mt-1">{dept.description}</p>
-                        )}
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -494,24 +586,88 @@ export default function DepartmentsTab() {
             <DialogTitle>Add New Department</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="new-dept-name">Department Name *</Label>
-              <Input
-                id="new-dept-name"
-                value={newDepartmentName}
-                onChange={(e) => setNewDepartmentName(e.target.value)}
-                placeholder="e.g., Lunch, Dinner, Drinks"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="new-dept-name">Department Name *</Label>
+                <Input
+                  id="new-dept-name"
+                  value={newDepartmentName}
+                  onChange={(e) => setNewDepartmentName(e.target.value)}
+                  placeholder="e.g., Lunch, Dinner, Drinks"
+                />
+              </div>
+              <div>
+                <Label htmlFor="new-dept-description">Description (optional)</Label>
+                <Textarea
+                  id="new-dept-description"
+                  value={newDepartmentDescription}
+                  onChange={(e) => setNewDepartmentDescription(e.target.value)}
+                  placeholder="Describe what products belong here"
+                  rows={2}
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="new-dept-description">Description (optional)</Label>
-              <Textarea
-                id="new-dept-description"
-                value={newDepartmentDescription}
-                onChange={(e) => setNewDepartmentDescription(e.target.value)}
-                placeholder="Describe what products belong in this department"
-                rows={3}
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Tile Color</Label>
+                <div className="grid grid-cols-5 gap-2 mt-2">
+                  {COLOR_OPTIONS.map((color) => (
+                    <button
+                      key={color.value}
+                      type="button"
+                      onClick={() => setNewDepartmentColor(color.value)}
+                      className={`w-12 h-12 rounded-lg transition-all ${
+                        newDepartmentColor === color.value
+                          ? 'ring-2 ring-offset-2 ring-blue-600 scale-110'
+                          : 'hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: color.value }}
+                      title={color.name}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>Tile Icon</Label>
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {ICON_OPTIONS.map((iconOption) => {
+                    const IconComp = iconOption.icon;
+                    return (
+                      <button
+                        key={iconOption.name}
+                        type="button"
+                        onClick={() => setNewDepartmentIcon(iconOption.name)}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          newDepartmentIcon === iconOption.name
+                            ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                        title={iconOption.name}
+                      >
+                        <IconComp className="w-6 h-6 mx-auto" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50 dark:bg-gray-800">
+              <div
+                className="w-16 h-16 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: newDepartmentColor }}
+              >
+                {(() => {
+                  const IconComp = getIconComponent(newDepartmentIcon);
+                  return <IconComp className="w-8 h-8 text-white" />;
+                })()}
+              </div>
+              <div>
+                <p className="text-sm font-medium">Tile Preview</p>
+                <p className="text-xs text-gray-500">This is how your department will appear in POS</p>
+              </div>
             </div>
           </div>
           <DialogFooter>
