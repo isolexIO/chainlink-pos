@@ -38,6 +38,7 @@ import DealerLandingEditor from '../components/superadmin/DealerLandingEditor';
 import DemoMenuManager from '../components/superadmin/DemoMenuManager';
 import DealerManagement from '../components/rootadmin/DealerManagement';
 import PendingMerchants from '../components/superadmin/PendingMerchants';
+import AmazonAffiliateManager from '../components/superadmin/AmazonAffiliateManager';
 
 export default function SuperAdminPage() {
   const [user, setUser] = useState(null);
@@ -292,7 +293,7 @@ export default function SuperAdminPage() {
 
         {/* Main Content */}
         <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-2 w-full">
+          <TabsList className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-11 gap-2 w-full">
             <TabsTrigger value="pending">
               <UserPlus className="w-4 h-4 mr-2" />
               Pending
@@ -312,6 +313,10 @@ export default function SuperAdminPage() {
             <TabsTrigger value="devices">
               <Package className="w-4 h-4 mr-2" />
               Device Shop
+            </TabsTrigger>
+            <TabsTrigger value="amazon">
+              <Package className="w-4 h-4 mr-2" />
+              Amazon
             </TabsTrigger>
             <TabsTrigger value="logs">
               <FileText className="w-4 h-4 mr-2" />
@@ -353,6 +358,10 @@ export default function SuperAdminPage() {
 
           <TabsContent value="devices">
             <DeviceShopManagement />
+          </TabsContent>
+
+          <TabsContent value="amazon">
+            <AmazonAffiliateManager />
           </TabsContent>
 
           <TabsContent value="logs">
