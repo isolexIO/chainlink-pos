@@ -597,7 +597,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 className="bg-white/20 text-white border-2 border-white hover:bg-white hover:text-blue-600 transition-all"
-                onClick={() => window.open('https://tawk.to/chat/66c9efd2ea492f34bc09af03/1i62d1jbm', '_blank')}
+                onClick={() => window.open('https://071be2.c.myucm.cloud/liveChat?liveChatAccess=MF83MDA2N2YzNDg5OTQ0OWI0OTdiMzhlMWQyNDhkNTg5Ml8wMDBiODIwNzFiZTImNmI3ODBlYzM4ZThmMWQyYjNiNDcwMTliMWM1OWM2MzA=', '_blank')}
               >
                 <MessageCircle className="w-5 h-5 mr-2" />
                 Chat with Sales
