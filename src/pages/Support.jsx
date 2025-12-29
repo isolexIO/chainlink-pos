@@ -45,6 +45,7 @@ import {
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import UserManual from '../components/support/UserManual';
+import ChatAvailabilityStatus from '../components/support/ChatAvailabilityStatus';
 
 // This function is assumed to exist in the application's routing context.
 // For standalone completeness, a placeholder is provided.
@@ -266,35 +267,36 @@ export default function SupportPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8" // Removed text-center
+          className="mb-6 sm:mb-8"
         >
-          {/* Removed large icon header as per outline */}
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Support Center
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
             Get help with ChainLINK POS - We're here to help!
           </p>
         </motion.div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
-            <TabsTrigger value="live_support">
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Live Support
+            <TabsTrigger value="live_support" className="text-xs sm:text-sm">
+              <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Live Support</span>
+              <span className="sm:hidden">Chat</span>
             </TabsTrigger>
-            <TabsTrigger value="tickets">
-              <Ticket className="w-4 h-4 mr-2" />
-              My Tickets ({tickets.length})
+            <TabsTrigger value="tickets" className="text-xs sm:text-sm">
+              <Ticket className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">My Tickets ({tickets.length})</span>
+              <span className="sm:hidden">Tickets</span>
             </TabsTrigger>
-            <TabsTrigger value="resources">
-              <Book className="w-4 h-4 mr-2" />
+            <TabsTrigger value="resources" className="text-xs sm:text-sm">
+              <Book className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
               Resources
             </TabsTrigger>
           </TabsList>
 
           {/* Live Support Tab */}
-          <TabsContent value="live_support" className="space-y-6">
+          <TabsContent value="live_support" className="space-y-4 sm:space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -307,44 +309,45 @@ export default function SupportPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <ChatAvailabilityStatus showLabel={true} />
                   <div className="flex-1">
                     <p className="font-medium text-blue-800 dark:text-blue-200">
-                      Chat with our support team
+                      Live Chat Support
                     </p>
                     <p className="text-sm text-blue-600 dark:text-blue-400">
-                      Connect instantly for help with your questions
+                      Connect instantly with our support team
                     </p>
                   </div>
                 </div>
 
                 <Button
                   size="lg"
-                  className="w-full"
+                  className="w-full sm:w-auto"
                   onClick={() => window.open('https://071be2.c.myucm.cloud/liveChat?liveChatAccess=MF83MDA2N2YzNDg5OTQ0OWI0OTdiMzhlMWQyNDhkNTg5Ml8wMDBiODIwNzFiZTImNmI3ODBlYzM4ZThmMWQyYjNiNDcwMTliMWM1OWM2MzA=', '_blank')}
                 >
                   <MessageCircle className="w-5 h-5 mr-2" />
-                  Start Chat
+                  Start Live Chat
                 </Button>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
                   <div className="flex items-start gap-3">
-                    <Phone className="w-5 h-5 text-blue-600 mt-1" />
+                    <Phone className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
                     <div>
-                      <p className="font-medium">Phone Support (Call/Text)</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="font-medium text-sm sm:text-base">Phone Support (Call/Text)</p>
+                      <a href="tel:419-729-3889" className="text-sm text-blue-600 hover:underline dark:text-blue-400">
                         419-729-3889
-                      </p>
+                      </a>
                       <p className="text-xs text-gray-500">Available for calls and text messages</p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <Mail className="w-5 h-5 text-blue-600 mt-1" />
+                    <Mail className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
                     <div>
-                      <p className="font-medium">Email Support</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="font-medium text-sm sm:text-base">Email Support</p>
+                      <a href="mailto:support@isolex.io" className="text-sm text-blue-600 hover:underline dark:text-blue-400 break-all">
                         support@isolex.io
-                      </p>
+                      </a>
                       <p className="text-xs text-gray-500">24-48 hour response</p>
                     </div>
                   </div>

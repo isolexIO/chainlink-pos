@@ -49,8 +49,13 @@ export default function Layout({ children, currentPageName }) {
 
   // Live Chat Widget
   useEffect(() => {
-    // Don't load chat widget on Customer Display or Kitchen Display
+    // Don't load chat widget on Customer Display, Kitchen Display, or mobile devices
     if (currentPageName === 'CustomerDisplay' || currentPageName === 'KitchenDisplay') {
+      return;
+    }
+    
+    // Skip chat widget on mobile devices (screen width < 768px)
+    if (window.innerWidth < 768) {
       return;
     }
 
@@ -69,8 +74,8 @@ export default function Layout({ children, currentPageName }) {
       btnTop: "",
       btnBottom: 30,
       liveChatUrl: 'https://071be2.c.myucm.cloud/liveChat?liveChatAccess=MF83MDA2N2YzNDg5OTQ0OWI0OTdiMzhlMWQyNDhkNTg5Ml8wMDBiODIwNzFiZTImNmI3ODBlYzM4ZThmMWQyYjNiNDcwMTliMWM1OWM2MzA=',
-      liveChatWidth: 400,
-      liveChatHeight: 680,
+      liveChatWidth: Math.min(400, window.innerWidth - 32),
+      liveChatHeight: Math.min(680, window.innerHeight - 100),
       expandDire: ""
     };
 
