@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -10,6 +10,13 @@ export default function WalletLogin({ onSuccess, merchantId }) {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
   const [walletType, setWalletType] = useState('');
+
+  // Auto-clear error after 4 seconds
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => setError(''), 4000);
+    return () => clearTimeout(timer);
+  }, [error]);
 
   const connectPhantom = async () => {
     setConnecting(true);
