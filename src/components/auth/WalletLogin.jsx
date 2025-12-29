@@ -307,12 +307,9 @@ export default function WalletLogin({ onSuccess, merchantId }) {
             {connecting && walletType === 'Phantom' ? (
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             ) : (
-              <img 
-                src="https://phantom.app/img/logo.png" 
-                alt="Phantom" 
-                className="w-5 h-5 mr-2"
-                onError={(e) => e.target.style.display = 'none'}
-              />
+              <div className="w-5 h-5 mr-2 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+                <Wallet className="w-3 h-3 text-white" />
+              </div>
             )}
             <span>Phantom Wallet</span>
           </Button>
@@ -327,12 +324,9 @@ export default function WalletLogin({ onSuccess, merchantId }) {
             {connecting && walletType === 'Solflare' ? (
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             ) : (
-              <img 
-                src="https://solflare.com/assets/logo.svg" 
-                alt="Solflare" 
-                className="w-5 h-5 mr-2"
-                onError={(e) => e.target.style.display = 'none'}
-              />
+              <div className="w-5 h-5 mr-2 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-lg flex items-center justify-center">
+                <Wallet className="w-3 h-3 text-white" />
+              </div>
             )}
             <span>Solflare Wallet</span>
           </Button>
@@ -347,12 +341,9 @@ export default function WalletLogin({ onSuccess, merchantId }) {
             {connecting && walletType === 'Backpack' ? (
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             ) : (
-              <img 
-                src="https://assets-global.website-files.com/63fac39125c3e85529c2c8bf/64cd2469502c3bc22f6fe02e_Logo%20Icon%20Black.svg" 
-                alt="Backpack" 
-                className="w-5 h-5 mr-2"
-                onError={(e) => e.target.style.display = 'none'}
-              />
+              <div className="w-5 h-5 mr-2 bg-black rounded-lg flex items-center justify-center">
+                <Wallet className="w-3 h-3 text-white" />
+              </div>
             )}
             <span>Backpack Wallet</span>
           </Button>
