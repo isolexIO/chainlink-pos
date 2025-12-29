@@ -43,8 +43,8 @@ import {
   Book           // New icon for resources
 } from 'lucide-react';
 import { format } from 'date-fns';
-// UserGuide removed as per outline's new tab structure
 import { motion } from 'framer-motion';
+import UserManual from '../components/support/UserManual';
 
 // This function is assumed to exist in the application's routing context.
 // For standalone completeness, a placeholder is provided.
@@ -451,44 +451,9 @@ export default function SupportPage() {
             </Card>
           </TabsContent>
 
-          {/* Resources Tab (formerly FAQ) */}
+          {/* Resources Tab - User Manual */}
           <TabsContent value="resources">
-            <Card>
-              <CardHeader>
-                <CardTitle>Frequently Asked Questions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">How do I reset an employee's PIN?</h3>
-                  <p className="text-gray-600">Go to Users & Roles, edit the employee, and enter a new 4-digit PIN.</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Can I accept both card and crypto payments?</h3>
-                  <p className="text-gray-600">Yes! Enable both in Settings → Payments. Customers can choose their preferred method at checkout.</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">How do refunds work?</h3>
-                  <p className="text-gray-600">Go to Orders, find the transaction, and click Refund. You may need manager/admin permission depending on your role.</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">What if my card reader isn't connecting?</h3>
-                  <p className="text-gray-600">Check: 1) Device is powered on, 2) Cables are secure, 3) IP address is correct in Settings → Devices. If issues persist, create a support ticket.</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">How do I purchase hardware from the Device Shop?</h3>
-                  <p className="text-gray-600">Navigate to Device Shop from the System Menu. Browse products, add to cart, and complete checkout with your business payment method.</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">What's the difference between Super Admin and Merchant Admin?</h3>
-                  <p className="text-gray-600"><strong>Super Admin:</strong> Isolex team members with access to all merchants (platform-wide).<br/><strong>Merchant Admin:</strong> Your business owner/manager with full access to your merchant data only.</p>
-                </div>
-              </CardContent>
-            </Card>
+            <UserManual />
           </TabsContent>
         </Tabs>
 
