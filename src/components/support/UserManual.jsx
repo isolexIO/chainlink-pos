@@ -391,7 +391,7 @@ export default function UserManual() {
         },
         {
           title: 'Getting Help',
-          content: 'Support channels:\n• Live Chat - Instant help\n• Support Tickets - Track issues\n• Phone: 1-800-CHAINLINK\n• Email: support@chainlinkpos.com\n• User manual (this guide)\n• Video tutorials (coming soon)'
+          content: 'Support channels:\n• Live Chat - Instant help\n• Support Tickets - Track issues\n• Phone: 419-729-3889 (Call/Text)\n• Email: support@isolex.io\n• User manual (this guide)\n• Video tutorials (coming soon)'
         }
       ]
     },
@@ -545,8 +545,8 @@ export default function UserManual() {
               </p>
               <div className="flex flex-wrap gap-2">
                 <Badge className="bg-blue-600 text-white">Live Chat Available</Badge>
-                <Badge variant="outline">1-800-CHAINLINK</Badge>
-                <Badge variant="outline">support@chainlinkpos.com</Badge>
+                <Badge variant="outline">419-729-3889</Badge>
+                <Badge variant="outline">support@isolex.io</Badge>
               </div>
             </div>
           </div>

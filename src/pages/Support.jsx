@@ -306,14 +306,13 @@ export default function SupportPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <div className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                   <div className="flex-1">
-                    <p className="font-medium text-green-800 dark:text-green-200">
-                      Support team is online
+                    <p className="font-medium text-blue-800 dark:text-blue-200">
+                      Chat with our support team
                     </p>
-                    <p className="text-sm text-green-600 dark:text-green-400">
-                      Average response time: 2 minutes
+                    <p className="text-sm text-blue-600 dark:text-blue-400">
+                      Connect instantly for help with your questions
                     </p>
                   </div>
                 </div>
@@ -331,11 +330,11 @@ export default function SupportPage() {
                   <div className="flex items-start gap-3">
                     <Phone className="w-5 h-5 text-blue-600 mt-1" />
                     <div>
-                      <p className="font-medium">Phone Support</p>
+                      <p className="font-medium">Phone Support (Call/Text)</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        1-800-CHAINLINK
+                        419-729-3889
                       </p>
-                      <p className="text-xs text-gray-500">Mon-Fri, 9am-6pm EST</p>
+                      <p className="text-xs text-gray-500">Available for calls and text messages</p>
                     </div>
                   </div>
 
@@ -344,7 +343,7 @@ export default function SupportPage() {
                     <div>
                       <p className="font-medium">Email Support</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        support@chainlinkpos.com
+                        support@isolex.io
                       </p>
                       <p className="text-xs text-gray-500">24-48 hour response</p>
                     </div>

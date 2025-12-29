@@ -493,9 +493,14 @@ export default function Layout({ children, currentPageName }) {
       </div>
 
       {!dealer?.settings?.hide_chainlink_branding && !PUBLIC_PAGES.includes(currentPageName) && (
-        <div className="fixed bottom-4 right-4 text-xs text-gray-500 bg-white dark:bg-gray-800 px-3 py-1 rounded-full shadow-sm pointer-events-none z-50">
-          Powered by ChainLINK
-        </div>
+        <a 
+          href="https://isolex.io" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="fixed bottom-4 right-4 text-xs text-gray-500 bg-white dark:bg-gray-800 px-3 py-1 rounded-full shadow-sm hover:shadow-md transition-shadow z-50"
+        >
+          © Isolex Corporation
+        </a>
       )}
     </div>
   );
