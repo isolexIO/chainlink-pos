@@ -373,7 +373,7 @@ export default function SettingsPage() {
                   />
                 )}
                 {activeTab === 'pricing' && (
-                  <PricingTab merchant={merchant} onSave={handleSave} saving={saving} />
+                  <PricingTab settings={merchant.settings} onSave={handleUpdateSettings} />
                 )}
                 {activeTab === 'devices' && (
                   <DevicesTab 
