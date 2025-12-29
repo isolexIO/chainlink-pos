@@ -39,7 +39,8 @@ export default function UserManual() {
         },
         {
           title: 'First Time Setup',
-          content: '1. Complete merchant onboarding\n2. Set up your business profile in Settings\n3. Add products to your catalog\n4. Configure payment methods\n5. Create employee accounts\n6. Test a transaction'
+          content: '1. Complete merchant onboarding\n2. Set up your business profile in Settings\n3. Add products to your catalog\n4. Configure payment methods\n5. Create employee accounts\n6. Test a transaction',
+          image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80'
         },
         {
           title: 'Logging In',
@@ -59,7 +60,8 @@ export default function UserManual() {
       content: [
         {
           title: 'Processing Orders',
-          content: '1. Select department or browse products\n2. Add items to cart\n3. Adjust quantities as needed\n4. Apply discounts if applicable\n5. Select customer (optional)\n6. Click "Pay" to proceed to checkout'
+          content: 'STEP 1: Access the POS\n• From System Menu, click the "POS" tile\n• The POS interface will load with departments on the left\n\nSTEP 2: Select Products\n• Click a department to filter products (e.g., "Food", "Drinks")\n• Click product cards to add them to the cart\n• Or use the barcode scanner to scan items\n\nSTEP 3: Adjust Order\n• In the cart on the right, adjust quantities with +/- buttons\n• Remove items by clicking the trash icon\n• Add modifiers by clicking "Add Modifier" on items\n\nSTEP 4: Apply Discounts (Optional)\n• Click "Apply Discount" button\n• Enter percentage or dollar amount\n• Discount applies to subtotal\n\nSTEP 5: Select Customer (Optional)\n• Click "Select Customer" button\n• Search by name, phone, or email\n• Select customer to apply loyalty points\n\nSTEP 6: Proceed to Payment\n• Review total amount (note dual pricing if enabled)\n• Click "Pay" button to open payment modal\n• Choose payment method and complete transaction',
+          image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80'
         },
         {
           title: 'Payment Methods',
@@ -95,7 +97,8 @@ export default function UserManual() {
       content: [
         {
           title: 'Adding Products',
-          content: '1. Navigate to Products from System Menu\n2. Click "Add Product"\n3. Fill in required fields:\n   • Name, SKU, Price\n   • Department\n   • Description (optional)\n   • Image (optional)\n4. Set inventory tracking if needed\n5. Mark as EBT eligible or age restricted\n6. Save product'
+          content: 'STEP 1: Open Products Page\n• From System Menu, click "Products"\n• You\'ll see your existing product catalog\n\nSTEP 2: Create New Product\n• Click the "+ Add Product" button in the top right\n• A product form will appear\n\nSTEP 3: Fill Basic Information\n• Enter Product Name (required)\n• Enter SKU (optional but recommended)\n• Enter Price (required - base price before tax)\n• Select Department from dropdown\n• Add Description (optional - shows on online menu)\n\nSTEP 4: Upload Product Image\n• Click "Upload Image" button\n• Select image file from your computer\n• Recommended size: 800x800px\n• Supported formats: JPG, PNG\n\nSTEP 5: Configure Options\n• Toggle "EBT Eligible" if item qualifies for food assistance\n• Toggle "Age Restricted" for alcohol/tobacco items\n• Set minimum age if age restricted\n• Toggle "Tippable" if tips should be allowed\n\nSTEP 6: Set Inventory (Optional)\n• Enter current stock quantity\n• Set low stock alert threshold\n• System will alert you when stock is low\n\nSTEP 7: Add Modifiers (Optional)\n• Click "Add Modifier Group"\n• Create options like sizes, toppings, extras\n• Set price adjustments for each modifier\n\nSTEP 8: Save Product\n• Click "Save Product" button\n• Product is now available on POS',
+          image: 'https://images.unsplash.com/photo-1556742111-a301076d9d18?w=800&q=80'
         },
         {
           title: 'Product Lookup (Barcode Scanner)',
@@ -151,7 +154,8 @@ export default function UserManual() {
       content: [
         {
           title: 'Payment Gateway Setup',
-          content: 'Configure in Settings → Payment Gateways:\n• Stripe - Credit/debit cards\n• Square - Full payment processing\n• PayPal - Online payments\n• Authorize.net - Enterprise processing\nEnter API credentials and test connection'
+          content: 'STEP 1: Access Settings\n• Click Settings from System Menu\n• Navigate to "Payment Gateways" tab\n\nSTEP 2: Choose Your Gateway\n• Stripe: Best for most businesses, easy setup\n• Square: All-in-one with hardware\n• PayPal: Good for online payments\n• Authorize.net: Enterprise-level processing\n\nSTEP 3: Get API Credentials\n• Sign up for an account with your chosen gateway\n• Navigate to their API/Developer section\n• Copy your API keys (usually publishable key and secret key)\n\nSTEP 4: Configure in ChainLINK\n• Paste API keys into the corresponding fields\n• Select "Live Mode" or "Test Mode"\n• For Stripe: Enter Publishable Key and Secret Key\n• For Square: Enter Access Token and Location ID\n• For PayPal: Enter Client ID and Client Secret\n\nSTEP 5: Test Connection\n• Click "Test Connection" button\n• System will verify your credentials\n• Green checkmark = successful connection\n• Red X = check your keys and try again\n\nSTEP 6: Enable Gateway\n• Toggle the "Enabled" switch to ON\n• Click "Save Settings" at the bottom\n• Gateway is now active for processing payments\n\nIMPORTANT: Always test with a small transaction before going live!',
+          image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&q=80'
         },
         {
           title: 'Card Payments',
@@ -215,7 +219,8 @@ export default function UserManual() {
       content: [
         {
           title: 'Online Menu Setup',
-          content: 'Create your online ordering page:\n1. Enable in Settings → Online Ordering\n2. Products automatically sync\n3. Set pickup/delivery options\n4. Configure hours of operation\n5. Share menu URL with customers'
+          content: 'STEP 1: Enable Online Ordering\n• Go to Settings → Online Ordering tab\n• Toggle "Enable Online Ordering" to ON\n\nSTEP 2: Configure Fulfillment Options\n• Enable "Pickup" if you want customers to pick up orders\n• Enable "Delivery" if you offer delivery service\n• Set delivery radius in miles\n• Set delivery fee amount\n\nSTEP 3: Set Operating Hours\n• Enter your business hours for each day\n• Set special holiday hours if needed\n• Orders only accepted during these times\n\nSTEP 4: Configure Order Settings\n• Set minimum order amount (e.g., $10 minimum)\n• Set estimated prep time (e.g., 20-30 minutes)\n• Enable/disable cash payments on pickup\n\nSTEP 5: Customize Appearance\n• Upload your logo\n• Set brand colors\n• Add welcome message\n• Add special instructions text\n\nSTEP 6: Get Your Menu URL\n• Copy your unique online menu URL\n• Format: yourbusiness.chainlinkpos.com/menu\n• Or use custom domain (see Custom Domain section)\n\nSTEP 7: Share Your Menu\n• Add link to your website\n• Share on social media\n• Print QR code on menus/receipts\n• Add to Google My Business\n\nSTEP 8: Test It Out\n• Open your menu URL in a browser\n• Place a test order\n• Verify it appears in Online Orders section\n• Make adjustments as needed',
+          image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80'
         },
         {
           title: 'Managing Online Orders',
@@ -526,8 +531,20 @@ export default function UserManual() {
                             <Badge variant="outline">{index + 1}</Badge>
                             {item.title}
                           </h3>
-                          <div className="text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
-                            {item.content}
+                          <div className="space-y-4">
+                            {item.image && (
+                              <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                                <img 
+                                  src={item.image} 
+                                  alt={item.title}
+                                  className="w-full h-auto"
+                                  loading="lazy"
+                                />
+                              </div>
+                            )}
+                            <div className="text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
+                              {item.content}
+                            </div>
                           </div>
                         </div>
                       ))
