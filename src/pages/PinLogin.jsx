@@ -264,7 +264,7 @@ export default function PinLoginPage() {
               onClick={() => window.location.href = createPageUrl('EmailLogin')}
             >
               <Mail className="w-4 h-4 mr-2" />
-              Login with Email Instead
+              Merchant Login
             </Button>
 
             <Button
