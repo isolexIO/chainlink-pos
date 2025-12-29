@@ -347,7 +347,12 @@ export default function WalletLogin({ onSuccess, merchantId }) {
             {connecting && walletType === 'Backpack' ? (
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             ) : (
-              <Wallet className="w-5 h-5 mr-2 text-orange-600" />
+              <img 
+                src="https://images.ctfassets.net/q5ulk4bp65r7/1rFQCqoq8hipvVJSKdU3fQ/21ab733af7a8ab404e29b873ffb28348/coinbase-icon2.svg" 
+                alt="Backpack" 
+                className="w-5 h-5 mr-2"
+                onError={(e) => e.target.style.display = 'none'}
+              />
             )}
             <span>Backpack Wallet</span>
           </Button>
@@ -362,7 +367,12 @@ export default function WalletLogin({ onSuccess, merchantId }) {
             {connecting && walletType === 'Jupiter' ? (
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             ) : (
-              <Wallet className="w-5 h-5 mr-2 text-blue-600" />
+              <img 
+                src="https://jup.ag/svg/jupiter-logo.svg" 
+                alt="Jupiter" 
+                className="w-5 h-5 mr-2 rounded-full"
+                onError={(e) => e.target.style.display = 'none'}
+              />
             )}
             <span>Jupiter Wallet</span>
           </Button>
@@ -377,7 +387,12 @@ export default function WalletLogin({ onSuccess, merchantId }) {
             {connecting && walletType === 'WalletConnect' ? (
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             ) : (
-              <Wallet className="w-5 h-5 mr-2" />
+              <img 
+                src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" 
+                alt="MetaMask" 
+                className="w-5 h-5 mr-2"
+                onError={(e) => e.target.style.display = 'none'}
+              />
             )}
             <span>MetaMask / WalletConnect</span>
           </Button>
