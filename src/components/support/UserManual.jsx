@@ -476,61 +476,68 @@ export default function UserManual() {
       </div>
 
       {/* Manual Content */}
-      <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-4">
-        <ScrollArea className="w-full whitespace-nowrap pb-2">
-          <TabsList className="inline-flex w-auto">
-            {sections.map((section) => {
-              const Icon = section.icon;
-              return (
-                <TabsTrigger
-                  key={section.id}
-                  value={section.id}
-                  className="flex items-center gap-2"
-                >
-                  <Icon className={`w-4 h-4 ${section.color}`} />
-                  <span className="hidden sm:inline">{section.title}</span>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-        </ScrollArea>
+      <Tabs value={activeSection} onValueChange={setActiveSection} className="flex flex-col md:flex-row gap-6">
+        {/* Vertical Tab List */}
+        <div className="md:w-64 flex-shrink-0">
+          <ScrollArea className="h-auto md:h-[calc(100vh-300px)]">
+            <TabsList className="flex flex-col h-auto space-y-1 bg-transparent">
+              {sections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <TabsTrigger
+                    key={section.id}
+                    value={section.id}
+                    className="w-full justify-start gap-3 px-4 py-3 data-[state=active]:bg-blue-50 dark:data-[state=active]:bg-blue-900/20"
+                  >
+                    <Icon className={`w-5 h-5 ${section.color}`} />
+                    <span className="text-left">{section.title}</span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </ScrollArea>
+        </div>
 
-        {filteredSections.map((section) => {
-          const Icon = section.icon;
-          return (
-            <TabsContent key={section.id} value={section.id} className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br from-${section.color.replace('text-', '')}-400 to-${section.color.replace('text-', '')}-600 flex items-center justify-center`}>
-                      <Icon className="w-6 h-6 text-white" />
-                    </div>
-                    {section.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {section.content.length === 0 && searchTerm !== '' ? (
-                    <p className="text-gray-500 text-center py-8">
-                      No results found for "{searchTerm}"
-                    </p>
-                  ) : (
-                    section.content.map((item, index) => (
-                      <div key={index} className="border-b last:border-b-0 pb-4 last:pb-0">
-                        <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
-                          <Badge variant="outline">{index + 1}</Badge>
-                          {item.title}
-                        </h3>
-                        <div className="text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
-                          {item.content}
-                        </div>
+        {/* Content Area */}
+        <div className="flex-1 min-w-0">
+
+          {filteredSections.map((section) => {
+            const Icon = section.icon;
+            return (
+              <TabsContent key={section.id} value={section.id} className="mt-0">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br from-${section.color.replace('text-', '')}-400 to-${section.color.replace('text-', '')}-600 flex items-center justify-center`}>
+                        <Icon className="w-6 h-6 text-white" />
                       </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          );
-        })}
+                      {section.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {section.content.length === 0 && searchTerm !== '' ? (
+                      <p className="text-gray-500 text-center py-8">
+                        No results found for "{searchTerm}"
+                      </p>
+                    ) : (
+                      section.content.map((item, index) => (
+                        <div key={index} className="border-b last:border-b-0 pb-4 last:pb-0">
+                          <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
+                            <Badge variant="outline">{index + 1}</Badge>
+                            {item.title}
+                          </h3>
+                          <div className="text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed">
+                            {item.content}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            );
+          })}
+        </div>
       </Tabs>
 
       {/* Help Banner */}
