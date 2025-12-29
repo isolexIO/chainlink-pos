@@ -41,7 +41,7 @@ export default function MarketplaceTab({ integrations, onUpdateIntegrations }) {
   };
 
   const IntegrationCard = ({ name, title, description, icon: Icon, color, fields }) => {
-    const integration = integrations[name] || { enabled: false };
+    const integration = integrations[name] || { enabled: false, auto_accept: false };
     
     return (
       <Card>
@@ -55,7 +55,7 @@ export default function MarketplaceTab({ integrations, onUpdateIntegrations }) {
               </div>
             </div>
             {integration.enabled && (
-              <Badge className="bg-green-100 text-green-800">
+              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                 <CheckCircle className="w-3 h-3 mr-1" /> Connected
               </Badge>
             )}
@@ -66,8 +66,8 @@ export default function MarketplaceTab({ integrations, onUpdateIntegrations }) {
             <Label htmlFor={`${name}-enabled`}>Enable {title}</Label>
             <Switch
               id={`${name}-enabled`}
-              checked={integration.enabled}
-              onCheckedChange={(checked) => updateIntegration(name, { enabled: checked })}
+              checked={integration.enabled || false}
+              onCheckedChange={(checked) => updateIntegration(name, { ...integration, enabled: checked })}
             />
           </div>
 
@@ -90,8 +90,8 @@ export default function MarketplaceTab({ integrations, onUpdateIntegrations }) {
                 </div>
                 <Switch
                   id={`${name}-auto-accept`}
-                  checked={integration.auto_accept}
-                  onCheckedChange={(checked) => updateIntegration(name, { auto_accept: checked })}
+                  checked={integration.auto_accept || false}
+                  onCheckedChange={(checked) => updateIntegration(name, { ...integration, auto_accept: checked })}
                 />
               </div>
 
@@ -124,7 +124,7 @@ export default function MarketplaceTab({ integrations, onUpdateIntegrations }) {
                   )}
                 </Button>
                 <Button
-                  onClick={() => updateIntegration(name, { enabled: false })}
+                  onClick={() => updateIntegration(name, { ...integration, enabled: false })}
                   variant="destructive"
                 >
                   Disconnect
