@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -90,7 +89,7 @@ export default function PaymentModal({
     const paymentData = {
       method: method,
       tipAmount: finalTipAmount,
-      total: method === 'cash' ? finalCashTotal : finalCardTotal,
+      total: (method === 'cash' || method === 'ebt') ? finalCashTotal : finalCardTotal,
     };
 
     if (method === 'cash') {
@@ -149,10 +148,10 @@ export default function PaymentModal({
           {isDualPricingActive ? (
             <div className="mt-2 text-center space-y-2">
               <div className="p-3 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                <div className="text-lg font-bold text-green-600 dark:text-green-300">Cash Total: ${totals.cashTotal}</div>
+                <div className="text-lg font-bold text-green-600 dark:text-green-300">Cash Price: ${totals.cashTotal}</div>
               </div>
               <div className="p-3 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <div className="text-lg font-bold text-blue-600 dark:text-blue-300">Card Total: ${totals.cardTotal}</div>
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-300">Non-Cash Price: ${totals.cardTotal}</div>
               </div>
             </div>
           ) : (
