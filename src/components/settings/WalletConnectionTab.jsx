@@ -31,6 +31,12 @@ export default function WalletConnectionTab() {
       if (currentUser.pos_settings?.solflare_wallet) {
         wallets.push({ type: 'solflare', address: currentUser.pos_settings.solflare_wallet });
       }
+      if (currentUser.pos_settings?.backpack_wallet) {
+        wallets.push({ type: 'backpack', address: currentUser.pos_settings.backpack_wallet });
+      }
+      if (currentUser.pos_settings?.jupiter_wallet) {
+        wallets.push({ type: 'jupiter', address: currentUser.pos_settings.jupiter_wallet });
+      }
       if (currentUser.pos_settings?.ethereum_wallet) {
         wallets.push({ type: 'ethereum', address: currentUser.pos_settings.ethereum_wallet });
       }
@@ -87,19 +93,19 @@ export default function WalletConnectionTab() {
     setWalletType('Solflare');
 
     try {
-      const isSolflareInstalled = window?.solflare?.isSolflare;
+      const provider = window?.solflare;
       
-      if (!isSolflareInstalled) {
+      if (!provider) {
         window.open('https://solflare.com/', '_blank');
         throw new Error('Solflare wallet is not installed. Please install it and refresh the page.');
       }
 
-      await window.solflare.connect();
-      const publicKey = window.solflare.publicKey.toString();
+      await provider.connect();
+      const publicKey = provider.publicKey.toString();
 
       const message = `Link this wallet to ChainLINK POS\n\nWallet: ${publicKey}\nUser: ${user.email}\nTimestamp: ${Date.now()}`;
       const encodedMessage = new TextEncoder().encode(message);
-      const signedMessage = await window.solflare.signMessage(encodedMessage, 'utf8');
+      const signedMessage = await provider.signMessage(encodedMessage, 'utf8');
 
       await linkWallet(publicKey, 'solflare', {
         signature: Array.from(signedMessage.signature),
@@ -111,6 +117,80 @@ export default function WalletConnectionTab() {
       toast({
         title: 'Error',
         description: err.message || 'Failed to connect Solflare wallet',
+        variant: 'destructive'
+      });
+    } finally {
+      setConnecting(false);
+      setWalletType('');
+    }
+  };
+
+  const connectBackpack = async () => {
+    setConnecting(true);
+    setWalletType('Backpack');
+
+    try {
+      const provider = window?.backpack;
+      
+      if (!provider) {
+        window.open('https://backpack.app/', '_blank');
+        throw new Error('Backpack wallet is not installed. Please install it and refresh the page.');
+      }
+
+      const resp = await provider.connect();
+      const publicKey = resp.publicKey.toString();
+
+      const message = `Link this wallet to ChainLINK POS\n\nWallet: ${publicKey}\nUser: ${user.email}\nTimestamp: ${Date.now()}`;
+      const encodedMessage = new TextEncoder().encode(message);
+      const signedMessage = await provider.signMessage(encodedMessage, 'utf8');
+
+      await linkWallet(publicKey, 'backpack', {
+        signature: Array.from(signedMessage.signature),
+        message: message
+      });
+
+    } catch (err) {
+      console.error('Backpack connection error:', err);
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to connect Backpack wallet',
+        variant: 'destructive'
+      });
+    } finally {
+      setConnecting(false);
+      setWalletType('');
+    }
+  };
+
+  const connectJupiter = async () => {
+    setConnecting(true);
+    setWalletType('Jupiter');
+
+    try {
+      const provider = window?.jupiter?.solana;
+      
+      if (!provider) {
+        window.open('https://jup.ag/', '_blank');
+        throw new Error('Jupiter wallet is not installed. Please install it and refresh the page.');
+      }
+
+      const resp = await provider.connect();
+      const publicKey = resp.publicKey.toString();
+
+      const message = `Link this wallet to ChainLINK POS\n\nWallet: ${publicKey}\nUser: ${user.email}\nTimestamp: ${Date.now()}`;
+      const encodedMessage = new TextEncoder().encode(message);
+      const signedMessage = await provider.signMessage(encodedMessage, 'utf8');
+
+      await linkWallet(publicKey, 'jupiter', {
+        signature: Array.from(signedMessage.signature),
+        message: message
+      });
+
+    } catch (err) {
+      console.error('Jupiter connection error:', err);
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to connect Jupiter wallet',
         variant: 'destructive'
       });
     } finally {
@@ -320,6 +400,40 @@ export default function WalletConnectionTab() {
                   <Wallet className="w-5 h-5 mr-2" />
                 )}
                 <span>Connect Solflare Wallet</span>
+              </Button>
+            )}
+
+            {/* Backpack */}
+            {!isWalletConnected('backpack') && (
+              <Button
+                onClick={connectBackpack}
+                disabled={connecting}
+                variant="outline"
+                className="w-full justify-start h-12"
+              >
+                {connecting && walletType === 'Backpack' ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <Wallet className="w-5 h-5 mr-2 text-orange-600" />
+                )}
+                <span>Connect Backpack Wallet</span>
+              </Button>
+            )}
+
+            {/* Jupiter */}
+            {!isWalletConnected('jupiter') && (
+              <Button
+                onClick={connectJupiter}
+                disabled={connecting}
+                variant="outline"
+                className="w-full justify-start h-12"
+              >
+                {connecting && walletType === 'Jupiter' ? (
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                ) : (
+                  <Wallet className="w-5 h-5 mr-2 text-blue-600" />
+                )}
+                <span>Connect Jupiter Wallet</span>
               </Button>
             )}
 
