@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -167,23 +166,17 @@ export default function Cart({
               <span>Tax</span>
               <span>${totals.taxAmount}</span>
             </div>
-            {isDualPricingEnabled && Number(totals.surchargeAmount) > 0 && (
-                <div className="flex justify-between text-sm text-blue-600">
-                    <span>{totals.surchargeLabel}</span>
-                    <span>${totals.surchargeAmount}</span>
-                </div>
-            )}
           </div>
           
           <div className="mt-4 pt-4 border-t">
             {isDualPricingEnabled ? (
                  <div className="space-y-2">
                     <div className="flex justify-between text-lg font-bold text-green-600">
-                        <span>Cash Total</span>
+                        <span>Cash Price</span>
                         <span>${totals.cashTotal}</span>
                     </div>
                      <div className="flex justify-between text-xl font-bold">
-                        <span>Card Total</span>
+                        <span>Non-Cash Price</span>
                         <span>${totals.cardTotal}</span>
                     </div>
                 </div>
