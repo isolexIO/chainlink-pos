@@ -425,7 +425,7 @@ export default function WalletConnectionTab() {
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                 ) : (
                   <img 
-                    src="https://images.ctfassets.net/q5ulk4bp65r7/1rFQCqoq8hipvVJSKdU3fQ/21ab733af7a8ab404e29b873ffb28348/coinbase-icon2.svg" 
+                    src="https://assets-global.website-files.com/63fac39125c3e85529c2c8bf/64cd2469502c3bc22f6fe02e_Logo%20Icon%20Black.svg" 
                     alt="Backpack" 
                     className="w-5 h-5 mr-2"
                     onError={(e) => e.target.style.display = 'none'}
