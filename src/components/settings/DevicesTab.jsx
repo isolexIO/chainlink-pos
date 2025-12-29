@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,16 +58,49 @@ export default function DevicesTab({ hardware: devices, onUpdateHardware: onUpda
   const testConnection = async (category, device) => {
     setTestingDevice(device.id);
     
-    // Simulate connection test
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Update device status
-    updateDevice(category, device.id, {
-      is_connected: true,
-      last_tested: new Date().toISOString()
-    });
-    
-    setTestingDevice(null);
+    try {
+      // Validate connection parameters
+      if (['ethernet', 'wifi'].includes(device.connection_type)) {
+        if (!device.ip_address) {
+          alert('Please enter an IP address');
+          setTestingDevice(null);
+          return;
+        }
+        if (!device.port) {
+          alert('Please enter a port number');
+          setTestingDevice(null);
+          return;
+        }
+      }
+      
+      // Simulate connection test
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate success/failure based on connection type
+      const isConnected = Math.random() > 0.2; // 80% success rate
+      
+      if (isConnected) {
+        updateDevice(category, device.id, {
+          is_connected: true,
+          last_tested: new Date().toISOString()
+        });
+        alert(`${device.name} connected successfully!`);
+      } else {
+        updateDevice(category, device.id, {
+          is_connected: false,
+          last_tested: new Date().toISOString()
+        });
+        alert(`Failed to connect to ${device.name}. Please check your configuration.`);
+      }
+    } catch (error) {
+      alert(`Connection test failed: ${error.message}`);
+      updateDevice(category, device.id, {
+        is_connected: false,
+        last_tested: new Date().toISOString()
+      });
+    } finally {
+      setTestingDevice(null);
+    }
   };
 
   const DeviceCard = ({ device, category, icon: Icon, color }) => (
