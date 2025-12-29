@@ -33,7 +33,8 @@ import {
   Shield,
   MessageCircle,
   Building2,
-  Gift
+  Gift,
+  Sparkles
 } from 'lucide-react';
 import AdvertisingTile from '../components/system-menu/AdvertisingTile';
 
@@ -292,6 +293,15 @@ export default function SystemMenu() {
       description: 'System configuration',
       path: 'Settings',
       color: 'from-gray-500 to-gray-600',
+      permission: 'admin_settings'
+    },
+    {
+      id: 'ai_website',
+      icon: <Sparkles className="w-6 h-6" />,
+      title: 'AI Website Generator',
+      description: 'Generate a website with AI',
+      path: 'AIWebsiteGenerator',
+      color: 'from-indigo-500 via-purple-500 to-pink-500',
       permission: 'admin_settings'
     },
     {
