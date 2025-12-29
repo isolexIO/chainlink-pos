@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { base44 } from '@/api/base44Client';
 import { Loader2 } from 'lucide-react';
 
-export default function IntegrationCard({ app }) {
+export default function IntegrationCard({ app, onUpdate }) {
   const { name, category, description, icon: Icon, status: initialStatus } = app;
   const [showDialog, setShowDialog] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -73,8 +73,10 @@ export default function IntegrationCard({ app }) {
       alert(`${name} ${config.enabled ? 'connected' : 'disconnected'} successfully!`);
       setShowDialog(false);
       
-      // Reload page to reflect changes
-      window.location.reload();
+      // Trigger parent refresh
+      if (onUpdate) {
+        onUpdate();
+      }
     } catch (error) {
       console.error('Integration save error:', error);
       alert('Failed to save integration: ' + error.message);
