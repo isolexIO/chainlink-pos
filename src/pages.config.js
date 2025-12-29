@@ -32,7 +32,6 @@ import Support from './pages/Support';
 import SystemMenu from './pages/SystemMenu';
 import TermsOfService from './pages/TermsOfService';
 import Users from './pages/Users';
-import WebsiteGenerator from './pages/WebsiteGenerator';
 import __Layout from './Layout.jsx';
 
 
@@ -71,7 +70,6 @@ export const PAGES = {
     "SystemMenu": SystemMenu,
     "TermsOfService": TermsOfService,
     "Users": Users,
-    "WebsiteGenerator": WebsiteGenerator,
 }
 
 export const pagesConfig = {
