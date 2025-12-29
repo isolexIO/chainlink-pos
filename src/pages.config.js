@@ -1,3 +1,4 @@
+import AIWebsiteGenerator from './pages/AIWebsiteGenerator';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import CustomerDisplay from './pages/CustomerDisplay';
@@ -29,14 +30,14 @@ import Settings from './pages/Settings';
 import Subscriptions from './pages/Subscriptions';
 import SuperAdmin from './pages/SuperAdmin';
 import Support from './pages/Support';
+import SystemMenu from './pages/SystemMenu';
 import TermsOfService from './pages/TermsOfService';
 import Users from './pages/Users';
-import SystemMenu from './pages/SystemMenu';
-import AIWebsiteGenerator from './pages/AIWebsiteGenerator';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AIWebsiteGenerator": AIWebsiteGenerator,
     "About": About,
     "Contact": Contact,
     "CustomerDisplay": CustomerDisplay,
@@ -68,10 +69,9 @@ export const PAGES = {
     "Subscriptions": Subscriptions,
     "SuperAdmin": SuperAdmin,
     "Support": Support,
+    "SystemMenu": SystemMenu,
     "TermsOfService": TermsOfService,
     "Users": Users,
-    "SystemMenu": SystemMenu,
-    "AIWebsiteGenerator": AIWebsiteGenerator,
 }
 
 export const pagesConfig = {

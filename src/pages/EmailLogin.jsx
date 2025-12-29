@@ -18,6 +18,13 @@ export default function EmailLoginPage() {
     loadDealer();
   }, []);
 
+  // Auto-clear error after 4 seconds
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => setError(''), 4000);
+    return () => clearTimeout(timer);
+  }, [error]);
+
   const loadDealer = async () => {
     try {
       const hostname = window.location.hostname;

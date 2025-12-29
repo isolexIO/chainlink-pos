@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +16,13 @@ export default function PinLoginPage() {
   // Renamed isLoading to loading as per the outline
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Auto-clear error after 4 seconds
+  useEffect(() => {
+    if (!error) return;
+    const timer = setTimeout(() => setError(''), 4000);
+    return () => clearTimeout(timer);
+  }, [error]);
   // showWalletLogin and checkingAuth states are removed as per the outline's structure changes
   // const [showWalletLogin, setShowWalletLogin] = useState(false);
   // const [checkingAuth, setCheckingAuth] = useState(true);

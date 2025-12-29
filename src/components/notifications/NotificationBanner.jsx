@@ -118,6 +118,21 @@ export default function NotificationBanner() {
     }
   };
 
+  // Auto-dismiss notifications after 4 seconds
+  useEffect(() => {
+    if (notifications.length === 0) return;
+
+    const timers = notifications.map(notification => {
+      return setTimeout(() => {
+        handleDismiss(notification);
+      }, 4000);
+    });
+
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
+  }, [notifications]);
+
   const getIcon = (type) => {
     switch (type) {
       case 'info':
