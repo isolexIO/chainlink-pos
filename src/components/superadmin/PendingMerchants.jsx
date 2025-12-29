@@ -52,33 +52,19 @@ export default function PendingMerchants() {
     setActivationError('');
     
     try {
-      // Step 1: Create admin user for the merchant
-      const newUser = await base44.entities.User.create({
-        email: selectedMerchant.owner_email,
-        full_name: selectedMerchant.owner_name,
+      // Step 1: Activate merchant account and create admin user via backend function
+      const { data } = await base44.functions.invoke('createMerchantAccount', {
         merchant_id: selectedMerchant.id,
+        owner_email: selectedMerchant.owner_email,
+        owner_name: selectedMerchant.owner_name,
         dealer_id: selectedMerchant.dealer_id || null,
-        role: 'admin',
         pin: pin,
-        is_active: true,
-        permissions: {
-          pos: true,
-          inventory: true,
-          reports: true,
-          settings: true,
-          users: true,
-          customers: true,
-          loyalty: true,
-          online_orders: true,
-          kitchen_display: true
-        }
+        temp_password: tempPassword
       });
 
-      // Step 2: Update merchant status
-      await base44.entities.Merchant.update(selectedMerchant.id, {
-        status: 'active',
-        activated_at: new Date().toISOString()
-      });
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to create merchant account');
+      }
 
       // Step 3: Set up demo data if requested
       if (selectedMerchant.settings?.demo_data_requested) {
