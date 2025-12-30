@@ -704,12 +704,21 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
                           <Download className="w-4 h-4" />
                           Next Steps
                         </h3>
-                        <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
+                        <ul className="text-sm text-green-800 dark:text-green-200 space-y-1 mb-3">
                           <li>1. Download all HTML files</li>
-                          <li>2. Upload to web hosting (Netlify, Vercel, etc.)</li>
+                          <li>2. Upload to web hosting</li>
                           <li>3. Connect your domain</li>
                           <li>4. Customize content as needed</li>
                         </ul>
+                        <a
+                          href="https://reactr.site"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          <Globe className="w-4 h-4" />
+                          View ReactR Hosting Plans
+                        </a>
                       </div>
                     </div>
                   </div>
