@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
         // If merchant_id is provided, activate existing merchant
         if (merchant_id) {
             // Invite user with admin role
-            await base44.asServiceRole.users.inviteUser(owner_email.toLowerCase().trim(), 'admin');
+            await base44.users.inviteUser(owner_email.toLowerCase().trim(), 'merchant_admin');
             
             // Get the created user to update PIN
             const users = await base44.asServiceRole.entities.User.filter({ 
@@ -36,7 +36,8 @@ Deno.serve(async (req) => {
                     merchant_id: merchant_id,
                     dealer_id: dealer_id || null,
                     pin: pin,
-                    is_active: true
+                    is_active: true,
+                    full_name: owner_name
                 });
             }
             
