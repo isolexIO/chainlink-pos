@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Sparkles, Eye, Download, Globe } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Sparkles, Eye, Download, Globe, Image as ImageIcon, Palette, FileCode, Zap, ShoppingCart } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import PermissionGate from '../components/PermissionGate';
 
@@ -16,11 +18,54 @@ export default function AIWebsiteGenerator() {
     description: '',
     features: '',
     colors: '',
-    targetAudience: ''
+    targetAudience: '',
+    includePages: {
+      home: true,
+      about: true,
+      services: true,
+      contact: true,
+      gallery: false,
+      blog: false
+    },
+    enableOnlineOrdering: false,
+    generateLogo: false,
+    generateImages: false
   });
   const [loading, setLoading] = useState(false);
+  const [logoLoading, setLogoLoading] = useState(false);
   const [generatedWebsite, setGeneratedWebsite] = useState(null);
+  const [generatedLogo, setGeneratedLogo] = useState(null);
+  const [generatedImages, setGeneratedImages] = useState([]);
   const [previewMode, setPreviewMode] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [merchantSettings, setMerchantSettings] = useState(null);
+  const [activeTab, setActiveTab] = useState('home');
+
+  useEffect(() => {
+    loadUserAndSettings();
+  }, []);
+
+  const loadUserAndSettings = async () => {
+    try {
+      const pinUserJSON = localStorage.getItem('pinLoggedInUser');
+      let user = null;
+      if (pinUserJSON) {
+        user = JSON.parse(pinUserJSON);
+      } else {
+        user = await base44.auth.me();
+      }
+      setCurrentUser(user);
+
+      if (user?.merchant_id) {
+        const settings = await base44.entities.MerchantSettings.filter({ merchant_id: user.merchant_id });
+        if (settings && settings.length > 0) {
+          setMerchantSettings(settings[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user and settings:', error);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!businessInfo.businessName || !businessInfo.industry || !businessInfo.description) {
