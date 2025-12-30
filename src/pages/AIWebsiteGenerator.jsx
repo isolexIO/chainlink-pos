@@ -299,8 +299,9 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
             <Card className="h-fit">
               <CardHeader>
                 <CardTitle>Business Information</CardTitle>
+                <CardDescription>Provide details about your business to generate a custom website</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="businessName">Business Name *</Label>
                   <Input
@@ -345,12 +346,17 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
 
                 <div className="space-y-2">
                   <Label htmlFor="colors">Preferred Color Scheme</Label>
-                  <Input
-                    id="colors"
-                    placeholder="e.g., Blue and white, Modern dark theme"
-                    value={businessInfo.colors}
-                    onChange={(e) => setBusinessInfo({ ...businessInfo, colors: e.target.value })}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="colors"
+                      placeholder="e.g., Blue and white, Modern dark theme"
+                      value={businessInfo.colors}
+                      onChange={(e) => setBusinessInfo({ ...businessInfo, colors: e.target.value })}
+                    />
+                    <Button variant="outline" size="icon" title="Color palette">
+                      <Palette className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -361,6 +367,114 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
                     value={businessInfo.targetAudience}
                     onChange={(e) => setBusinessInfo({ ...businessInfo, targetAudience: e.target.value })}
                   />
+                </div>
+
+                <div className="border-t pt-4 space-y-4">
+                  <Label className="text-base font-semibold">Pages to Include</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(businessInfo.includePages).map(([page, enabled]) => (
+                      <div key={page} className="flex items-center space-x-2">
+                        <Switch
+                          id={`page-${page}`}
+                          checked={enabled}
+                          onCheckedChange={(checked) => 
+                            setBusinessInfo({
+                              ...businessInfo,
+                              includePages: { ...businessInfo.includePages, [page]: checked }
+                            })
+                          }
+                        />
+                        <Label htmlFor={`page-${page}`} className="text-sm capitalize cursor-pointer">
+                          {page}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 space-y-4">
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-yellow-500" />
+                    AI Enhancements
+                  </Label>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <ImageIcon className="w-5 h-5 text-purple-600" />
+                        <div>
+                          <Label className="text-sm font-medium">Generate Logo</Label>
+                          <p className="text-xs text-gray-500">AI-powered logo creation</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateLogo}
+                        disabled={logoLoading || !businessInfo.businessName}
+                      >
+                        {logoLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          generatedLogo ? '✓' : 'Generate'
+                        )}
+                      </Button>
+                    </div>
+
+                    {generatedLogo && (
+                      <div className="flex justify-center p-2 bg-white dark:bg-gray-800 rounded border">
+                        <img src={generatedLogo} alt="Generated Logo" className="h-20 object-contain" />
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <ImageIcon className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <Label className="text-sm font-medium">Generate Images</Label>
+                          <p className="text-xs text-gray-500">3 custom images for your site</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateImages}
+                        disabled={loading || !businessInfo.industry}
+                      >
+                        {loading && generatedImages.length === 0 ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          generatedImages.length > 0 ? `✓ ${generatedImages.length}` : 'Generate'
+                        )}
+                      </Button>
+                    </div>
+
+                    {generatedImages.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {generatedImages.map((img, idx) => (
+                          <img key={idx} src={img} alt={`Generated ${idx + 1}`} className="w-full h-20 object-cover rounded border" />
+                        ))}
+                      </div>
+                    )}
+
+                    {merchantSettings?.settings?.online_ordering?.enabled && (
+                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <ShoppingCart className="w-5 h-5 text-green-600" />
+                          <div>
+                            <Label className="text-sm font-medium">Link Online Ordering</Label>
+                            <p className="text-xs text-gray-500">Add "Order Online" button</p>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={businessInfo.enableOnlineOrdering}
+                          onCheckedChange={(checked) => 
+                            setBusinessInfo({ ...businessInfo, enableOnlineOrdering: checked })
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <Button
