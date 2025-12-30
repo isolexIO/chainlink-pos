@@ -49,6 +49,12 @@ export default function AIWebsiteGenerator() {
     loadUserAndSettings();
   }, []);
 
+  useEffect(() => {
+    if (currentUser?.merchant_id) {
+      loadExistingWebsite();
+    }
+  }, [currentUser]);
+
   const loadUserAndSettings = async () => {
     try {
       const pinUserJSON = localStorage.getItem('pinLoggedInUser');
@@ -68,6 +74,26 @@ export default function AIWebsiteGenerator() {
       }
     } catch (error) {
       console.error('Error loading user and settings:', error);
+    }
+  };
+
+  const loadExistingWebsite = async () => {
+    try {
+      const websites = await base44.entities.GeneratedWebsite.filter({
+        merchant_id: currentUser.merchant_id
+      });
+      
+      if (websites && websites.length > 0) {
+        const website = websites[0];
+        setWebsiteId(website.website_id);
+        setGeneratedWebsite(website.html_content);
+        setGeneratedLogo(website.logo_url || null);
+        setGeneratedImages(website.image_urls || []);
+        setBusinessInfo(website.business_info || businessInfo);
+        setPreviewMode(true);
+      }
+    } catch (error) {
+      console.log('No existing website found');
     }
   };
 
@@ -298,8 +324,32 @@ Generate ONLY the HTML files with complete inline CSS, nothing else. No explanat
       setPreviewMode(true);
       setActiveTab('home');
 
-      // Create initial analytics record to mark website as generated
+      // Save website to database
       try {
+        const existingWebsites = await base44.entities.GeneratedWebsite.filter({
+          merchant_id: currentUser?.merchant_id
+        });
+        
+        if (existingWebsites && existingWebsites.length > 0) {
+          await base44.entities.GeneratedWebsite.update(existingWebsites[0].id, {
+            website_id: newWebsiteId,
+            html_content: response,
+            logo_url: generatedLogo,
+            image_urls: generatedImages,
+            business_info: businessInfo
+          });
+        } else {
+          await base44.entities.GeneratedWebsite.create({
+            merchant_id: currentUser?.merchant_id,
+            website_id: newWebsiteId,
+            html_content: response,
+            logo_url: generatedLogo,
+            image_urls: generatedImages,
+            business_info: businessInfo
+          });
+        }
+
+        // Create initial analytics record
         await base44.entities.WebsiteAnalytics.create({
           merchant_id: currentUser?.merchant_id,
           website_id: newWebsiteId,
@@ -310,7 +360,7 @@ Generate ONLY the HTML files with complete inline CSS, nothing else. No explanat
           referrer: 'system_generated'
         });
       } catch (err) {
-        console.log('Could not create initial analytics record:', err);
+        console.log('Could not save website:', err);
       }
     } catch (error) {
       console.error('Error generating website:', error);
@@ -370,6 +420,15 @@ Generate ONLY the HTML files with complete inline CSS, nothing else. No explanat
       if (!websiteId || !currentUser?.merchant_id) return;
       
       setLoading(true);
+      
+      // Delete website record
+      const websites = await base44.entities.GeneratedWebsite.filter({
+        merchant_id: currentUser.merchant_id
+      });
+      
+      for (const website of websites) {
+        await base44.entities.GeneratedWebsite.delete(website.id);
+      }
       
       // Delete all analytics for this website
       const analytics = await base44.entities.WebsiteAnalytics.filter({
