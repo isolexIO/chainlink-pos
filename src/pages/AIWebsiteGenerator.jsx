@@ -370,6 +370,25 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
             </p>
           </div>
 
+          {generatedWebsite && websiteId && (
+            <div className="mb-6">
+              <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-indigo-600" />
+                    Live Analytics Dashboard
+                  </CardTitle>
+                  <CardDescription>
+                    Track visitors, engagement, and performance of your generated website
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AnalyticsDashboard websiteId={websiteId} merchantId={currentUser?.merchant_id} />
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Input Form */}
             <Card className="h-fit">
