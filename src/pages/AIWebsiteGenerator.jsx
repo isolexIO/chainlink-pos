@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Sparkles, Eye, Download, Globe, Image as ImageIcon, Palette, FileCode, Zap, ShoppingCart, BarChart3 } from 'lucide-react';
+import { Loader2, Sparkles, Eye, Download, Globe, Image as ImageIcon, Palette, FileCode, Zap, ShoppingCart, BarChart3, Trash2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import PermissionGate from '../components/PermissionGate';
 import AnalyticsDashboard from '../components/website-generator/AnalyticsDashboard';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export default function AIWebsiteGenerator() {
   const [businessInfo, setBusinessInfo] = useState({
@@ -42,6 +43,7 @@ export default function AIWebsiteGenerator() {
   const [merchantSettings, setMerchantSettings] = useState(null);
   const [activeTab, setActiveTab] = useState('home');
   const [websiteId, setWebsiteId] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     loadUserAndSettings();
@@ -331,6 +333,38 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
     }
   };
 
+  const handleDeleteWebsite = async () => {
+    try {
+      if (!websiteId || !currentUser?.merchant_id) return;
+      
+      setLoading(true);
+      
+      // Delete all analytics for this website
+      const analytics = await base44.entities.WebsiteAnalytics.filter({
+        merchant_id: currentUser.merchant_id,
+        website_id: websiteId
+      });
+      
+      for (const record of analytics) {
+        await base44.entities.WebsiteAnalytics.delete(record.id);
+      }
+      
+      // Reset state
+      setGeneratedWebsite('');
+      setWebsiteId(null);
+      setGeneratedLogo(null);
+      setGeneratedImages([]);
+      setShowDeleteConfirm(false);
+      
+      alert('Website deleted successfully! You can now generate a new one.');
+    } catch (error) {
+      console.error('Error deleting website:', error);
+      alert('Failed to delete website. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const extractPageContent = (pageName) => {
     if (!generatedWebsite) return '';
     
@@ -374,13 +408,26 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
             <div className="mb-6">
               <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-indigo-600" />
-                    Live Analytics Dashboard
-                  </CardTitle>
-                  <CardDescription>
-                    Track visitors, engagement, and performance of your generated website
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-indigo-600" />
+                        Live Analytics Dashboard
+                      </CardTitle>
+                      <CardDescription>
+                        Track visitors, engagement, and performance of your generated website
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete & Start Over
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <AnalyticsDashboard websiteId={websiteId} merchantId={currentUser?.merchant_id} />
