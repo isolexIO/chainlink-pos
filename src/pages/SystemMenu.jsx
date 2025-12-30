@@ -105,12 +105,12 @@ export default function SystemMenu() {
 
       // Check if merchant has generated any websites
       try {
-        const analytics = await base44.entities.WebsiteAnalytics.filter({
+        const websites = await base44.entities.GeneratedWebsite.filter({
           merchant_id: currentUser.merchant_id
         });
-        setHasWebsite(analytics.length > 0);
+        setHasWebsite(websites.length > 0);
       } catch (error) {
-        console.log('No website analytics found');
+        console.log('No generated website found');
       }
 
       const orders = await base44.entities.Order.filter({
