@@ -67,6 +67,59 @@ export default function AIWebsiteGenerator() {
     }
   };
 
+  const handleGenerateLogo = async () => {
+    if (!businessInfo.businessName || !businessInfo.industry) {
+      alert('Please fill in Business Name and Industry first');
+      return;
+    }
+
+    setLogoLoading(true);
+    try {
+      const logoPrompt = `Create a professional, modern logo for ${businessInfo.businessName}, a ${businessInfo.industry} business. The logo should be clean, memorable, and suitable for digital and print use. Style: ${businessInfo.colors || 'modern and professional'}`;
+      
+      const logoUrl = await base44.integrations.Core.GenerateImage({
+        prompt: logoPrompt
+      });
+
+      setGeneratedLogo(logoUrl.url);
+      alert('Logo generated successfully!');
+    } catch (error) {
+      console.error('Error generating logo:', error);
+      alert('Failed to generate logo. Please try again.');
+    } finally {
+      setLogoLoading(false);
+    }
+  };
+
+  const handleGenerateImages = async () => {
+    if (!businessInfo.industry || !businessInfo.description) {
+      alert('Please fill in Industry and Description first');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const imagePrompts = [
+        `Professional hero image for a ${businessInfo.industry} business: ${businessInfo.description}. High quality, modern, ${businessInfo.colors || 'professional colors'}`,
+        `Interior or product showcase for ${businessInfo.businessName} in ${businessInfo.industry}. Clean, bright, professional`,
+        `Team or service image for ${businessInfo.industry} business. Welcoming, professional, modern aesthetic`
+      ];
+
+      const imagePromises = imagePrompts.map(prompt => 
+        base44.integrations.Core.GenerateImage({ prompt })
+      );
+
+      const results = await Promise.all(imagePromises);
+      setGeneratedImages(results.map(r => r.url));
+      alert('Images generated successfully!');
+    } catch (error) {
+      console.error('Error generating images:', error);
+      alert('Failed to generate images. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!businessInfo.businessName || !businessInfo.industry || !businessInfo.description) {
       alert('Please fill in at least Business Name, Industry, and Description');
@@ -75,7 +128,23 @@ export default function AIWebsiteGenerator() {
 
     setLoading(true);
     try {
-      const prompt = `Generate a complete, modern, professional HTML website for the following business:
+      const selectedPages = Object.entries(businessInfo.includePages)
+        .filter(([_, enabled]) => enabled)
+        .map(([page]) => page);
+
+      const onlineOrderingLink = businessInfo.enableOnlineOrdering && merchantSettings?.settings?.online_ordering?.enabled
+        ? `\n- Include a prominent "Order Online" button that links to: ${window.location.origin}/online-menu`
+        : '';
+
+      const logoSection = generatedLogo 
+        ? `\n- Use this logo image in the header: ${generatedLogo}`
+        : '';
+
+      const imagesSection = generatedImages.length > 0
+        ? `\n- Use these generated images throughout the site: ${generatedImages.join(', ')}`
+        : '';
+
+      const prompt = `Generate a complete, modern, multi-page HTML/CSS/JS website for the following business:
 
 Business Name: ${businessInfo.businessName}
 Industry: ${businessInfo.industry}
@@ -84,20 +153,46 @@ Key Features/Services: ${businessInfo.features || 'Not specified'}
 Preferred Colors: ${businessInfo.colors || 'Professional theme'}
 Target Audience: ${businessInfo.targetAudience || 'General public'}
 
-Requirements:
-- Create a complete, single-page HTML file with inline CSS and JavaScript
-- Include modern, responsive design with mobile support
-- Use clean, professional styling with gradients and modern UI elements
-- Include sections: Hero, About, Services/Features, Contact
-- Add smooth scrolling and animations
-- Include a working contact form (can use mailto: or a form service)
-- Use the business name and description throughout
-- Make it visually appealing with the specified color scheme
-- Include meta tags for SEO
-- Add social media links placeholders
-- Ensure all code is production-ready
+Pages to Include: ${selectedPages.join(', ')}
+${onlineOrderingLink}
+${logoSection}
+${imagesSection}
 
-Generate ONLY the complete HTML code, nothing else. No explanations, just the HTML.`;
+Requirements:
+- Create MULTIPLE separate HTML files (one for each page: ${selectedPages.map(p => p + '.html').join(', ')})
+- Each page should have consistent header/footer navigation
+- Include modern, responsive design with mobile support
+- Use clean, professional styling with gradients, animations, and modern UI elements
+- Apply the specified color scheme throughout
+- Add smooth scrolling, hover effects, and micro-interactions
+- Include working navigation between pages
+- Add meta tags for SEO on each page
+- Include social media links placeholders
+- Add a sticky header with navigation
+- Use modern CSS Grid and Flexbox layouts
+- Include testimonials section if relevant
+- Add call-to-action buttons throughout
+- Ensure all code is production-ready and accessible
+- Use relative links between pages (e.g., <a href="about.html">)
+
+For each page generate:
+1. Complete HTML with inline CSS and JavaScript
+2. Proper semantic HTML5 structure
+3. Mobile-responsive design
+4. Professional styling matching the color scheme
+
+Output Format:
+Generate each HTML file separately with clear labels:
+
+=== home.html ===
+[complete HTML code]
+
+=== about.html ===
+[complete HTML code]
+
+(and so on for each selected page)
+
+Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
 
       const response = await base44.integrations.Core.InvokeLLM({
         prompt: prompt,
@@ -106,6 +201,7 @@ Generate ONLY the complete HTML code, nothing else. No explanations, just the HT
 
       setGeneratedWebsite(response);
       setPreviewMode(true);
+      setActiveTab('home');
     } catch (error) {
       console.error('Error generating website:', error);
       alert('Failed to generate website. Please try again.');
