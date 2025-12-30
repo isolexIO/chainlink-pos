@@ -11,6 +11,7 @@ import { Loader2, Sparkles, Eye, Download, Globe, Image as ImageIcon, Palette, F
 import { base44 } from '@/api/base44Client';
 import PermissionGate from '../components/PermissionGate';
 import AnalyticsDashboard from '../components/website-generator/AnalyticsDashboard';
+import WebsiteEditor from '../components/website-generator/WebsiteEditor';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export default function AIWebsiteGenerator() {
@@ -507,7 +508,7 @@ Generate ONLY the HTML files with complete inline CSS, nothing else. No explanat
           </div>
 
           {generatedWebsite && websiteId && (
-            <div className="mb-6">
+            <div className="space-y-6 mb-6">
               <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-indigo-200 dark:border-indigo-800">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -535,6 +536,17 @@ Generate ONLY the HTML files with complete inline CSS, nothing else. No explanat
                   <AnalyticsDashboard websiteId={websiteId} merchantId={currentUser?.merchant_id} />
                 </CardContent>
               </Card>
+
+              <WebsiteEditor
+                websiteId={websiteId}
+                merchantId={currentUser?.merchant_id}
+                initialContent={generatedWebsite}
+                initialBusinessInfo={businessInfo}
+                onSave={(updatedContent, updatedInfo) => {
+                  setGeneratedWebsite(updatedContent);
+                  setBusinessInfo(updatedInfo);
+                }}
+              />
             </div>
           )}
 
