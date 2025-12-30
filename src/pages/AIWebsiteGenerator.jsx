@@ -297,6 +297,21 @@ Generate ONLY the HTML files with complete inline CSS, nothing else. No explanat
       setGeneratedWebsite(response);
       setPreviewMode(true);
       setActiveTab('home');
+
+      // Create initial analytics record to mark website as generated
+      try {
+        await base44.entities.WebsiteAnalytics.create({
+          merchant_id: currentUser?.merchant_id,
+          website_id: newWebsiteId,
+          event_type: 'page_view',
+          page_path: '/',
+          visitor_id: 'system',
+          session_id: 'generation',
+          referrer: 'system_generated'
+        });
+      } catch (err) {
+        console.log('Could not create initial analytics record:', err);
+      }
     } catch (error) {
       console.error('Error generating website:', error);
       alert('Failed to generate website. Please try again.');
