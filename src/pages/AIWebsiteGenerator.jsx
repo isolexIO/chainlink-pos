@@ -213,15 +213,60 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
   const handleDownload = () => {
     if (!generatedWebsite) return;
 
-    const blob = new Blob([generatedWebsite], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${businessInfo.businessName.replace(/\s+/g, '-').toLowerCase()}-website.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Split the website into multiple files if it contains file separators
+    const filePattern = /===\s*(\w+\.html)\s*===([\s\S]*?)(?====|$)/g;
+    const files = [];
+    let match;
+
+    while ((match = filePattern.exec(generatedWebsite)) !== null) {
+      files.push({
+        name: match[1].trim(),
+        content: match[2].trim()
+      });
+    }
+
+    if (files.length > 1) {
+      // Multiple files - create a ZIP would be ideal, but for now download separately
+      files.forEach((file, index) => {
+        setTimeout(() => {
+          const blob = new Blob([file.content], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = file.name;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, index * 500);
+      });
+      alert(`Downloading ${files.length} HTML files...`);
+    } else {
+      // Single file
+      const blob = new Blob([generatedWebsite], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${businessInfo.businessName.replace(/\s+/g, '-').toLowerCase()}-website.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const extractPageContent = (pageName) => {
+    if (!generatedWebsite) return '';
+    
+    const pattern = new RegExp(`===\\s*${pageName}\\.html\\s*===([\\s\\S]*?)(?====|$)`, 'i');
+    const match = generatedWebsite.match(pattern);
+    
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    
+    // Fallback to full content if no separators found
+    return generatedWebsite;
   };
 
   const handleCopyCode = () => {
