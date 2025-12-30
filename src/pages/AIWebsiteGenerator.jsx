@@ -7,9 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Sparkles, Eye, Download, Globe, Image as ImageIcon, Palette, FileCode, Zap, ShoppingCart } from 'lucide-react';
+import { Loader2, Sparkles, Eye, Download, Globe, Image as ImageIcon, Palette, FileCode, Zap, ShoppingCart, BarChart3 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import PermissionGate from '../components/PermissionGate';
+import AnalyticsDashboard from '../components/website-generator/AnalyticsDashboard';
 
 export default function AIWebsiteGenerator() {
   const [businessInfo, setBusinessInfo] = useState({
@@ -40,6 +41,7 @@ export default function AIWebsiteGenerator() {
   const [currentUser, setCurrentUser] = useState(null);
   const [merchantSettings, setMerchantSettings] = useState(null);
   const [activeTab, setActiveTab] = useState('home');
+  const [websiteId, setWebsiteId] = useState(null);
 
   useEffect(() => {
     loadUserAndSettings();
@@ -128,6 +130,10 @@ export default function AIWebsiteGenerator() {
 
     setLoading(true);
     try {
+      // Generate unique website ID
+      const newWebsiteId = `${currentUser?.merchant_id || 'demo'}_${Date.now()}`;
+      setWebsiteId(newWebsiteId);
+
       const selectedPages = Object.entries(businessInfo.includePages)
         .filter(([_, enabled]) => enabled)
         .map(([page]) => page);
@@ -143,6 +149,74 @@ export default function AIWebsiteGenerator() {
       const imagesSection = generatedImages.length > 0
         ? `\n- Use these generated images throughout the site: ${generatedImages.join(', ')}`
         : '';
+
+      // Analytics tracking script
+      const analyticsScript = `
+<!-- Analytics Tracking -->
+<script>
+(function() {
+  const WEBSITE_ID = '${newWebsiteId}';
+  const API_URL = '${window.location.origin}';
+  
+  // Generate visitor ID
+  let visitorId = localStorage.getItem('visitor_id');
+  if (!visitorId) {
+    visitorId = 'v_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('visitor_id', visitorId);
+  }
+  
+  // Generate session ID
+  let sessionId = sessionStorage.getItem('session_id');
+  if (!sessionId) {
+    sessionId = 's_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    sessionStorage.setItem('session_id', sessionId);
+  }
+  
+  function track(eventType, data = {}) {
+    fetch(API_URL + '/functions/trackWebsiteAnalytics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        website_id: WEBSITE_ID,
+        event_type: eventType,
+        page_path: window.location.pathname,
+        visitor_id: visitorId,
+        session_id: sessionId,
+        referrer: document.referrer || 'direct',
+        ...data
+      })
+    }).catch(err => console.log('Analytics error:', err));
+  }
+  
+  // Track page view
+  track('page_view');
+  
+  // Track unique visitor (first visit only)
+  if (!localStorage.getItem('tracked_visitor')) {
+    track('unique_visitor');
+    localStorage.setItem('tracked_visitor', 'true');
+  }
+  
+  // Track button clicks
+  document.addEventListener('click', function(e) {
+    if (e.target.matches('button, a, .btn')) {
+      track('button_click', {
+        element_id: e.target.id,
+        element_text: e.target.textContent.trim()
+      });
+    }
+  });
+  
+  // Track form submissions
+  document.addEventListener('submit', function(e) {
+    if (e.target.matches('form')) {
+      track('form_submission', {
+        form_data: { submitted: true }
+      });
+    }
+  });
+})();
+</script>`;
 
       const prompt = `Generate a complete, modern, multi-page HTML/CSS/JS website for the following business:
 
@@ -174,6 +248,8 @@ Requirements:
 - Add call-to-action buttons throughout
 - Ensure all code is production-ready and accessible
 - Use relative links between pages (e.g., <a href="about.html">)
+- Include this analytics tracking code before the closing </body> tag on EVERY page:
+${analyticsScript}
 
 For each page generate:
 1. Complete HTML with inline CSS and JavaScript
