@@ -501,33 +501,36 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
             {/* Preview */}
             <Card className="h-fit">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Preview & Download</CardTitle>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="w-5 h-5" />
+                    Preview & Download
+                  </CardTitle>
                   {generatedWebsite && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setPreviewMode(!previewMode)}
                       >
-                        <Eye className="w-4 h-4 mr-2" />
-                        {previewMode ? 'Show Code' : 'Show Preview'}
+                        {previewMode ? <FileCode className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
+                        {previewMode ? 'Code' : 'Preview'}
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={handleCopyCode}
                       >
-                        <Globe className="w-4 h-4 mr-2" />
-                        Copy Code
+                        <Globe className="w-4 h-4 mr-1" />
+                        Copy
                       </Button>
                       <Button
                         size="sm"
                         onClick={handleDownload}
-                        className="bg-green-600 hover:bg-green-700"
+                        className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                       >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
+                        <Download className="w-4 h-4 mr-1" />
+                        Download All
                       </Button>
                     </div>
                   )}
@@ -536,25 +539,47 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
               <CardContent>
                 {!generatedWebsite ? (
                   <div className="flex flex-col items-center justify-center py-20 text-center">
-                    <Sparkles className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400 mb-2">
-                      No website generated yet
+                    <div className="relative mb-6">
+                      <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 opacity-20 blur-3xl rounded-full"></div>
+                      <Sparkles className="w-16 h-16 text-indigo-600 relative" />
+                    </div>
+                    <p className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Ready to create something amazing?
                     </p>
-                    <p className="text-sm text-gray-400 dark:text-gray-500">
-                      Fill in the form and click "Generate Website" to get started
+                    <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+                      Fill in your business details, generate a logo and images, then click "Generate Website" to create a professional multi-page website
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {previewMode ? (
-                      <div className="border rounded-lg overflow-hidden bg-white" style={{ height: '600px' }}>
-                        <iframe
-                          srcDoc={generatedWebsite}
-                          className="w-full h-full"
-                          title="Website Preview"
-                          sandbox="allow-same-origin"
-                        />
-                      </div>
+                      <>
+                        <Tabs value={activeTab} onValueChange={setActiveTab}>
+                          <TabsList className="w-full justify-start overflow-x-auto">
+                            {Object.entries(businessInfo.includePages)
+                              .filter(([_, enabled]) => enabled)
+                              .map(([page]) => (
+                                <TabsTrigger key={page} value={page} className="capitalize">
+                                  {page}
+                                </TabsTrigger>
+                              ))}
+                          </TabsList>
+                          {Object.entries(businessInfo.includePages)
+                            .filter(([_, enabled]) => enabled)
+                            .map(([page]) => (
+                              <TabsContent key={page} value={page}>
+                                <div className="border rounded-lg overflow-hidden bg-white" style={{ height: '600px' }}>
+                                  <iframe
+                                    srcDoc={extractPageContent(page)}
+                                    className="w-full h-full"
+                                    title={`${page} Preview`}
+                                    sandbox="allow-same-origin"
+                                  />
+                                </div>
+                              </TabsContent>
+                            ))}
+                        </Tabs>
+                      </>
                     ) : (
                       <div className="border rounded-lg overflow-hidden bg-gray-900 text-green-400 p-4" style={{ height: '600px', overflowY: 'auto' }}>
                         <pre className="text-xs font-mono whitespace-pre-wrap break-words">
@@ -563,16 +588,34 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
                       </div>
                     )}
 
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                      <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                        Next Steps:
-                      </h3>
-                      <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                        <li>• Download the HTML file using the button above</li>
-                        <li>• Upload it to your web hosting service</li>
-                        <li>• Or use the code in your website builder</li>
-                        <li>• Customize further as needed</li>
-                      </ul>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                        <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4" />
+                          What You Got
+                        </h3>
+                        <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                          <li>✓ {Object.values(businessInfo.includePages).filter(Boolean).length} responsive HTML pages</li>
+                          <li>✓ Modern CSS with animations</li>
+                          <li>✓ Mobile-friendly navigation</li>
+                          {generatedLogo && <li>✓ Custom AI-generated logo</li>}
+                          {generatedImages.length > 0 && <li>✓ {generatedImages.length} AI-generated images</li>}
+                          {businessInfo.enableOnlineOrdering && <li>✓ Online ordering integration</li>}
+                        </ul>
+                      </div>
+
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                        <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2 flex items-center gap-2">
+                          <Download className="w-4 h-4" />
+                          Next Steps
+                        </h3>
+                        <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
+                          <li>1. Download all HTML files</li>
+                          <li>2. Upload to web hosting (Netlify, Vercel, etc.)</li>
+                          <li>3. Connect your domain</li>
+                          <li>4. Customize content as needed</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 )}
