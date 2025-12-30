@@ -79,21 +79,32 @@ export default function AIWebsiteGenerator() {
 
   const loadExistingWebsite = async () => {
     try {
+      if (!currentUser?.merchant_id) {
+        console.log('No merchant_id available');
+        return;
+      }
+
+      console.log('Loading existing website for merchant:', currentUser.merchant_id);
       const websites = await base44.entities.GeneratedWebsite.filter({
         merchant_id: currentUser.merchant_id
       });
       
+      console.log('Found websites:', websites);
+      
       if (websites && websites.length > 0) {
         const website = websites[0];
+        console.log('Loading website:', website.website_id);
         setWebsiteId(website.website_id);
         setGeneratedWebsite(website.html_content);
         setGeneratedLogo(website.logo_url || null);
         setGeneratedImages(website.image_urls || []);
         setBusinessInfo(website.business_info || businessInfo);
         setPreviewMode(true);
+      } else {
+        console.log('No websites found for this merchant');
       }
     } catch (error) {
-      console.log('No existing website found');
+      console.error('Error loading existing website:', error);
     }
   };
 
