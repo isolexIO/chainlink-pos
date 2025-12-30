@@ -234,43 +234,60 @@ ${onlineOrderingLink}
 ${logoSection}
 ${imagesSection}
 
-Requirements:
+CRITICAL CSS REQUIREMENTS:
+- EVERY HTML file MUST include comprehensive CSS inside <style> tags in the <head> section
+- CSS must include: reset styles, typography, layout (grid/flexbox), colors, spacing, responsive breakpoints
+- Use modern CSS with transitions, hover effects, gradients, shadows, and animations
+- Include @media queries for mobile responsiveness (max-width: 768px, 480px)
+- Style ALL elements: header, nav, buttons, forms, sections, footer, cards, images
+- Add smooth transitions and hover states to interactive elements
+- Use the specified color scheme throughout all styles
+
+HTML/CSS Structure Requirements:
 - Create MULTIPLE separate HTML files (one for each page: ${selectedPages.map(p => p + '.html').join(', ')})
-- Each page should have consistent header/footer navigation
-- Include modern, responsive design with mobile support
-- Use clean, professional styling with gradients, animations, and modern UI elements
-- Apply the specified color scheme throughout
-- Add smooth scrolling, hover effects, and micro-interactions
-- Include working navigation between pages
-- Add meta tags for SEO on each page
-- Include social media links placeholders
-- Add a sticky header with navigation
-- Use modern CSS Grid and Flexbox layouts
-- Include testimonials section if relevant
-- Add call-to-action buttons throughout
-- Ensure all code is production-ready and accessible
-- Use relative links between pages (e.g., <a href="about.html">)
-- Include this analytics tracking code before the closing </body> tag on EVERY page:
+- Each HTML file must have: <!DOCTYPE html>, <html>, <head> with <style> tags, <body>
+- Include consistent header with navigation and footer on every page
+- Use semantic HTML5: <header>, <nav>, <main>, <section>, <footer>
+- Add meta viewport tag: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+- Use relative links between pages (e.g., <a href="about.html">About</a>)
+
+Design Elements to Include:
+- Hero section with gradient background and call-to-action buttons
+- Navigation bar with hover effects (sticky on scroll)
+- Content sections with cards, images, and proper spacing
+- Contact forms with styled inputs
+- Testimonials with rounded avatars and quotes
+- Footer with links and social media icons
+- Smooth scrolling and modern animations (fade-in, slide-up)
+- Professional color scheme with gradients and shadows
+- Call-to-action buttons with hover effects throughout
+
+Include this analytics tracking code before the closing </body> tag on EVERY page:
 ${analyticsScript}
 
-For each page generate:
-1. Complete HTML with inline CSS and JavaScript
-2. Proper semantic HTML5 structure
-3. Mobile-responsive design
-4. Professional styling matching the color scheme
-
-Output Format:
-Generate each HTML file separately with clear labels:
-
+Output Format Example:
 === home.html ===
-[complete HTML code]
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${businessInfo.businessName} - Home</title>
+    <style>
+        /* Reset and Base Styles */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }
+        
+        /* Add comprehensive CSS here for all page elements */
+        /* Include header, nav, hero, sections, buttons, footer, responsive styles */
+    </style>
+</head>
+<body>
+    <!-- Complete page structure here -->
+</body>
+</html>
 
-=== about.html ===
-[complete HTML code]
-
-(and so on for each selected page)
-
-Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
+Generate ONLY the HTML files with complete inline CSS, nothing else. No explanations outside the code.`;
 
       const response = await base44.integrations.Core.InvokeLLM({
         prompt: prompt,
