@@ -48,6 +48,7 @@ export default function SystemMenu() {
     openTickets: 0,
     todaySales: 0
   });
+  const [hasWebsite, setHasWebsite] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -101,6 +102,16 @@ export default function SystemMenu() {
       }
 
       if (!currentUser?.merchant_id) return;
+
+      // Check if merchant has generated any websites
+      try {
+        const analytics = await base44.entities.WebsiteAnalytics.filter({
+          merchant_id: currentUser.merchant_id
+        });
+        setHasWebsite(analytics.length > 0);
+      } catch (error) {
+        console.log('No website analytics found');
+      }
 
       const orders = await base44.entities.Order.filter({
         merchant_id: currentUser.merchant_id,
@@ -298,8 +309,8 @@ export default function SystemMenu() {
     {
       id: 'ai_website',
       icon: <Sparkles className="w-6 h-6" />,
-      title: 'AI Website Generator',
-      description: 'Generate a website with AI',
+      title: hasWebsite ? 'Manage Website' : 'AI Website Generator',
+      description: hasWebsite ? 'View analytics & manage your site' : 'Generate a website with AI',
       path: 'AIWebsiteGenerator',
       color: 'from-indigo-500 via-purple-500 to-pink-500',
       permission: 'admin_settings'
