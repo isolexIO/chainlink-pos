@@ -775,6 +775,24 @@ Generate ONLY the HTML files, nothing else. No explanations outside the code.`;
           </div>
         </div>
       </div>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Website & Analytics?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your generated website and all associated analytics data. 
+              You'll be able to generate a new website from scratch. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteWebsite} className="bg-red-600 hover:bg-red-700">
+              Delete Everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PermissionGate>
   );
 }
