@@ -1,13 +1,3 @@
-<html><head>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-THS8JRL2G6"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-THS8JRL2G6');
-</script></head></html>
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
