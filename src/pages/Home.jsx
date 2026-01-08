@@ -1,3 +1,6 @@
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-THS8JRL2G6"></script>
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
