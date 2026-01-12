@@ -3,8 +3,15 @@
     "name": "ChainLINK POS",
     "slug": "chainlink-pos",
     "scheme": "chainlinkpos",
+    "version": "0.0.1",
+    "platforms": ["android"],
+
     "android": {
       "package": "io.isolex.chainlinkpos"
+    },
+
+    "cli": {
+      "appVersionSource": "remote"
     }
   }
 }
