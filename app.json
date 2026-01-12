@@ -5,13 +5,16 @@
     "scheme": "chainlinkpos",
     "version": "0.0.1",
     "platforms": ["android"],
-
     "android": {
       "package": "io.isolex.chainlinkpos"
     },
-
     "cli": {
       "appVersionSource": "remote"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
     }
   }
 }
