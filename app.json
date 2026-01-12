@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "name": "ChainLINK POS",
+    "slug": "chainlink-pos",
+    "scheme": "chainlinkpos",
+    "android": {
+      "package": "io.isolex.chainlinkpos"
+    }
+  }
+}
