@@ -6,11 +6,26 @@
     "version": "0.0.1",
     "platforms": ["android"],
     "android": {
-      "package": "io.isolex.chainlinkpos"
+      "package": "io.isolex.chainlinkpos",
+      "permissions": [
+        "INTERNET",
+        "CAMERA"
+      ],
+      "softwareKeyboardLayoutMode": "adjustResize"
     },
     "cli": {
       "appVersionSource": "remote"
     },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "2a0c784f-43f2-4854-806a-5d49027e486c"
