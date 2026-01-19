@@ -298,7 +298,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 className="text-lg px-8 py-6 bg-white text-purple-600 hover:bg-gray-100 font-semibold shadow-2xl"
-                onClick={() => window.location.href = createPageUrl('MerchantOnboarding')}
+                onClick={() => window.location.href = createPageUrl('https://console.isolex.net/CL-signup.php')}
               >
                 {heroSettings.cta_primary_text || 'Start Free Trial'}
                 <ArrowRight className="ml-2 w-5 h-5" />
