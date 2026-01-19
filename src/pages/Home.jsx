@@ -589,7 +589,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 className="bg-white text-blue-600 hover:bg-gray-100"
-                onClick={() => window.location.href = createPageUrl('MerchantOnboarding')}
+                onClick={() => window.location.href = createPageUrl('https://console.isolex.net/CL-signup.php')}
               >
                 {settings?.cta_section?.cta_text || 'Get Started Today'}
                 <ArrowRight className="ml-2 w-5 h-5" />
