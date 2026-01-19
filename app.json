@@ -6,7 +6,7 @@
     "version": "remote",
     "platforms": ["android"],
     "android": {
-      "package": "io.isolex.chainlinkpos",
+      "package": "com.chainlinkpos.app",
       "permissions": [
         "INTERNET",
         "CAMERA"
