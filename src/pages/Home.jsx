@@ -234,7 +234,7 @@ export default function HomePage() {
                 Device Shop
               </a>
               <Button
-                onClick={() => window.location.href = createPageUrl('PinLogin')}
+                onClick={() => window.location.href = createPageUrl('emaillogin')}
                 className="bg-green-500 hover:bg-green-600 text-white"
               >
                 Sign In
@@ -242,7 +242,7 @@ export default function HomePage() {
             </div>
             <div className="md:hidden">
               <Button
-                onClick={() => window.location.href = createPageUrl('PinLogin')}
+                onClick={() => window.location.href = createPageUrl('emaillogin')}
                 size="sm"
                 className="bg-green-500 hover:bg-green-600 text-white"
               >
